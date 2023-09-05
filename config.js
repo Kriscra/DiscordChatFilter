@@ -1,12 +1,8 @@
 module.exports = {
     Bot: {
-        Token: "MTEyMTEyODUyODI0MzYwNTY1Nw.GG_3Lo.7JV-MOX9vqgvgdLrS66TTEeOdppktDL6qvH-Tk",
+        Token: "DISCORD_BOT_TOKEN",
         Prefix: ".",
-        BotDurum: "Bot Yapılıyor",
+        BotDurum: "Chat Filter",
         DurumTipi: "online"
-    },
-    Genel: {
-        deneme: ""
-    
     }
 }
