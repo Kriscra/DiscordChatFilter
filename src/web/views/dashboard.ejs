@@ -10,21 +10,29 @@
     <%- include('partials/navbar') %>
     <main>
       <div class="container">
-        <section class="grid">
-          <div class="hero">
-            <h1>Sunucularım</h1>
-            <p>Filtrelerini yönetmek istediğiniz sunucuyu seçin.</p>
+        <section class="section">
+          <div class="page-header">
+            <h1 class="page-title">Sunucularım</h1>
+            <p class="page-subtitle">
+              Yönetici olduğunuz ve botun bulunduğu sunucular için filtre
+              ayarlarını buradan kontrol edin. Her sunucu kendi kelime
+              listesine sahiptir ve değişiklikler anında uygulanır.
+            </p>
+          </div>
+          <div class="surface-card manager-card">
             <% if (!guilds.length) { %>
               <div class="empty">
-                Yönetici yetkisine sahip olduğunuz ve botun bulunduğu herhangi bir
-                sunucu bulunamadı.
+                Yönetici yetkisine sahip olduğunuz ve botun bulunduğu herhangi
+                bir sunucu bulunamadı. Botun davet edildiğinden ve Discord OAuth
+                ekranında gerekli izinleri verdiğinizden emin olun.
               </div>
             <% } else { %>
               <ul class="guild-list">
                 <% guilds.forEach(function (guild) { %>
                   <li class="guild-card">
                     <strong><%= guild.name %></strong>
-                    <a class="button" href="/dashboard/<%= guild.id %>">Yönet</a>
+                    <p>Filtre kelimelerini görüntüleyin, ekleyin veya kaldırın.</p>
+                    <a class="button" href="/dashboard/<%= guild.id %>">Paneli Aç</a>
                   </li>
                 <% }) %>
               </ul>

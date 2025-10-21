@@ -1,6 +1,16 @@
 <footer>
   <div class="container footer-content">
-    <span>&copy; <%= currentYear %> Chat Filter Dashboard</span>
-    <span>Discord moderasyonunuzu kolaylaştırın.</span>
+    <div>
+      <strong>Chat Filter</strong>
+      <span> &middot; &copy; <%= currentYear %></span>
+    </div>
+    <div class="footer-links">
+      <a href="<%= isHome ? '#features' : '/#features' %>">Özellikler</a>
+      <a href="<%= isHome ? '#dashboard' : '/#dashboard' %>">Dashboard</a>
+      <a href="<%= isHome ? '#commands' : '/#commands' %>">Komutlar</a>
+      <% if (isAuthenticated) { %>
+        <a href="/dashboard">Sunucular</a>
+      <% } %>
+    </div>
   </div>
 </footer>

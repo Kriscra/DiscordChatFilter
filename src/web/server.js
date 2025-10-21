@@ -9,6 +9,29 @@ const filterStore = require("../database/filterStore");
 const ADMINISTRATOR_PERMISSION = BigInt(0x00000008);
 let isStarted = false;
 
+const COMMAND_CATALOG = [
+  {
+    name: "!filitre /filitre",
+    type: "Mesaj & Slash",
+    description: "Filtre yönetim menüsünü açar ve kelime butonlarını sunar.",
+  },
+  {
+    name: "!yardım /yardım",
+    type: "Mesaj & Slash",
+    description: "Botun kullanım rehberini ve tüm komutların özetini gösterir.",
+  },
+  {
+    name: "!ping /ping",
+    type: "Mesaj & Slash",
+    description: "Botun gecikme süresini ölçerek çevrim içi durumunu doğrular.",
+  },
+  {
+    name: "!invite /invite",
+    type: "Mesaj & Slash",
+    description: "Sunucunuza botu eklemek için davet bağlantısı oluşturur.",
+  },
+];
+
 function hasAdministratorPermission(guild) {
   if (!guild) {
     return false;
@@ -65,7 +88,7 @@ function configurePassport() {
 
 function renderHome(req, res) {
   res.render("home", {
-    isAuthenticated: req.isAuthenticated?.() ?? false,
+    commands: COMMAND_CATALOG,
   });
 }
 

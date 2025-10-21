@@ -10,10 +10,15 @@
     <%- include('partials/navbar') %>
     <main>
       <div class="container">
-        <section class="grid">
-          <div class="hero">
-            <h1><%= guild.name %> Filtre Yönetimi</h1>
-            <p>Yeni kelimeler ekleyebilir veya mevcut kelimeleri kaldırabilirsiniz.</p>
+        <section class="section">
+          <div class="page-header">
+            <h1 class="page-title"><%= guild.name %> Filtre Yönetimi</h1>
+            <p class="page-subtitle">
+              Sunucunuzdaki yasaklı kelimeleri tek yerden yönetin. Eklediğiniz
+              veya kaldırdığınız her kelime bot ile anında senkronize edilir.
+            </p>
+          </div>
+          <div class="surface-card manager-card">
             <% if (flashMessage) { %>
               <div class="message <%= flashType %>"><%= flashMessage %></div>
             <% } %>
@@ -48,9 +53,9 @@
                 </button>
               </div>
             </form>
-            <p>
-              <a class="button" href="/dashboard">Sunuculara Dön</a>
-            </p>
+            <div>
+              <a class="button secondary" href="/dashboard">Sunuculara Dön</a>
+            </div>
           </div>
         </section>
       </div>

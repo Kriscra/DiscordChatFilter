@@ -10,10 +10,10 @@
     <%- include('partials/navbar') %>
     <main>
       <div class="container">
-        <section class="grid">
-          <div class="hero">
-            <h1><%= title %></h1>
-            <div class="message error"><%= message %></div>
+        <section class="section">
+          <div class="surface-card manager-card">
+            <h1 class="page-title"><%= title %></h1>
+            <p class="page-subtitle"><%= message %></p>
             <% if (backLink) { %>
               <a class="button" href="<%= backLink %>">Geri Dön</a>
             <% } %>
