@@ -89,6 +89,7 @@ function configurePassport() {
 function renderHome(req, res) {
   res.render("home", {
     commands: COMMAND_CATALOG,
+    isHome: true,
   });
 }
 
@@ -163,6 +164,7 @@ function startDashboard(client) {
     res.locals.user = req.user;
     res.locals.isAuthenticated = req.isAuthenticated?.() ?? false;
     res.locals.currentYear = new Date().getFullYear();
+    res.locals.isHome = false;
     next();
   });
 
