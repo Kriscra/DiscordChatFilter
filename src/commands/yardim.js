@@ -19,10 +19,10 @@ module.exports = {
       .setTitle("Chat Filter Yardım Menüsü")
       .setDescription(
         [
-          "**.yardım**: Bu menüyü gösterir.",
-          "**.filitre**: Filitre menüsünü gösterir.",
-          "**.invite**: Davet bağlantısını gönderir.",
-          "**.ping**: Botun gecikme değerini gösterir.",
+          "**.yardım** veya **/yardim**: Bu menüyü gösterir.",
+          "**.filitre** veya **/filitre**: Filitre menüsünü gösterir.",
+          "**.invite** veya **/invite**: Davet bağlantısını gönderir.",
+          "**.ping** veya **/ping**: Botun gecikme değerini gösterir.",
         ].join("\n"),
       )
       .setFooter({ text: "Beni davet etmek için butona tıklayabilirsiniz." })

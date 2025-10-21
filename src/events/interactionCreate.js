@@ -148,6 +148,44 @@ module.exports = {
       return;
     }
 
+    if (interaction.isChatInputCommand()) {
+      const command = interaction.client.slashCommands?.get(
+        interaction.commandName,
+      );
+
+      if (!command) {
+        await interaction.reply({
+          content:
+            "Bu komut artık kullanılamıyor. Lütfen komutları yeniden deneyin.",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      try {
+        await command.execute(interaction, interaction.client);
+      } catch (error) {
+        console.error(
+          `[SlashCommands] ${interaction.commandName} yürütülürken bir hata oluştu.`,
+          error,
+        );
+
+        const response = {
+          content:
+            "Komut çalıştırılırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+          ephemeral: true,
+        };
+
+        if (interaction.deferred || interaction.replied) {
+          await interaction.followUp(response);
+        } else {
+          await interaction.reply(response);
+        }
+      }
+
+      return;
+    }
+
     if (interaction.isButton()) {
       if (interaction.customId === "ekle") {
         await showAddModal(interaction);

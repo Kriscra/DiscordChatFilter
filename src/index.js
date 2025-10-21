@@ -5,7 +5,9 @@ const {
 } = require("discord.js");
 const config = require("./config");
 const { loadCommands } = require("./commands");
+const { loadSlashCommands } = require("./slashCommands");
 const { registerEvents } = require("./events");
+const { startDashboard } = require("./web/server");
 require("./database/filterStore");
 
 const client = new Client({
@@ -27,7 +29,10 @@ const client = new Client({
 });
 
 loadCommands(client);
+loadSlashCommands(client);
 registerEvents(client);
+
+startDashboard(client);
 
 client.login(config.Bot.Token);
 
