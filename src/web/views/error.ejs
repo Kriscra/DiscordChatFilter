@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> | Chat Filter Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container">
+        <section class="section">
+          <div class="surface-card manager-card">
+            <h1 class="page-title"><%= title %></h1>
+            <p class="page-subtitle"><%= message %></p>
+            <% if (backLink) { %>
+              <a class="button" href="<%= backLink %>">Geri Dön</a>
+            <% } %>
+          </div>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>

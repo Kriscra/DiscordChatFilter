@@ -1,0 +1,51 @@
+<header>
+  <div class="container">
+    <nav class="navbar">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M12 3L2 9l10 6 8-4.8V17l2-1V8L12 3z"
+            fill="rgba(148, 163, 255, 0.9)"
+          />
+          <path
+            d="M4 10v6l8 5 6-3.6V11l-6 3.6L4 10z"
+            fill="rgba(148, 163, 255, 0.55)"
+          />
+        </svg>
+        Chat Filter
+      </a>
+      <div class="nav-menu">
+        <div class="nav-links nav-primary">
+          <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/">Anasayfa</a>
+          <a class="<%= currentPath === '/ozellikler' ? 'active' : '' %>" href="/ozellikler">Özellikler</a>
+          <a class="<%= currentPath === '/komutlar' ? 'active' : '' %>" href="/komutlar">Komutlar</a>
+          <a
+            class="<%= currentPath && currentPath.startsWith('/dashboard') ? 'active' : '' %>"
+            href="/dashboard"
+          >Dashboard</a>
+          <a href="<%= isHome ? '#premium' : '/#premium' %>">Premium</a>
+        </div>
+        <div class="nav-links nav-secondary">
+          <% if (inviteUrl) { %>
+            <a class="button ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">Sunucuna Ekle</a>
+          <% } %>
+          <% if (profile) { %>
+            <div class="profile-chip">
+              <img src="<%= profile.avatarUrl %>" alt="Profil" />
+              <div class="profile-meta">
+                <span class="profile-name"><%= profile.tag %></span>
+                <div class="profile-actions">
+                  <a href="/dashboard">Sunucularım</a>
+                  <span>·</span>
+                  <a href="/logout">Çıkış Yap</a>
+                </div>
+              </div>
+            </div>
+          <% } else { %>
+            <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
+          <% } %>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>

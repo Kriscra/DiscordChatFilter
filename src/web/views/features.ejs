@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Filter · Özellikler</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container page-container">
+        <section class="page-hero">
+          <span class="tag">Özellikler</span>
+          <h1>Chat Filter mimarisini yakından keşfedin.</h1>
+          <p>
+            Filtreleme altyapısı, muafiyet katmanı ve dashboard senkronizasyonu
+            tek bir profesyonel ekosistemde birleşir. Aşağıdaki akış diyagramları
+            ve öne çıkan modüllerle yapıyı ayrıntılı olarak inceleyin.
+          </p>
+        </section>
+
+        <% if (Array.isArray(featureSpotlights) && featureSpotlights.length) { %>
+          <section class="feature-spotlights">
+            <% featureSpotlights.forEach(function (feature) { %>
+              <article class="spotlight-card">
+                <div class="spotlight-icon"><%= feature.icon %></div>
+                <h2><%= feature.title %></h2>
+                <p><%= feature.description %></p>
+                <% if (Array.isArray(feature.bullets) && feature.bullets.length) { %>
+                  <ul>
+                    <% feature.bullets.forEach(function (item) { %>
+                      <li><%= item %></li>
+                    <% }) %>
+                  </ul>
+                <% } %>
+              </article>
+            <% }) %>
+          </section>
+        <% } %>
+
+        <% if (Array.isArray(schematics) && schematics.length) { %>
+          <section class="schematic-section">
+            <h2>Akış şemaları</h2>
+            <p class="section-lead">
+              Operasyon katmanlarını üç boyutlu olarak inceleyin ve her adımdaki
+              güvenlik kontrollerini öğrenin.
+            </p>
+            <div class="schematic-grid">
+              <% schematics.forEach(function (diagram) { %>
+                <article class="schematic-card">
+                  <h3><%= diagram.title %></h3>
+                  <p><%= diagram.lead %></p>
+                  <div class="schematic-steps">
+                    <% if (Array.isArray(diagram.steps)) { %>
+                      <% diagram.steps.forEach(function (step) { %>
+                        <div class="schematic-step">
+                          <span class="step-label"><%= step.label %></span>
+                          <div>
+                            <h4><%= step.title %></h4>
+                            <p><%= step.description %></p>
+                          </div>
+                        </div>
+                      <% }) %>
+                    <% } %>
+                  </div>
+                </article>
+              <% }) %>
+            </div>
+          </section>
+        <% } %>
+
+        <section class="cta-panel">
+          <div>
+            <h2>Sunucunuzu dakikalar içinde koruyun</h2>
+            <p>
+              Chat Filter'ı davet ederek filtre çekirdeğini ve dashboard'u
+              birlikte kullanmaya başlayın. Yönetici yetkilerine sahip tüm
+              üyeler aynı deneyimi paylaşır.
+            </p>
+          </div>
+          <% if (inviteUrl) { %>
+            <a class="button" href="<%= inviteUrl %>" target="_blank" rel="noopener">
+              Botu Davet Et
+            </a>
+          <% } else { %>
+            <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
+          <% } %>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>

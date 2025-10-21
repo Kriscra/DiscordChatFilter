@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Filter Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar', { isHome: true }) %>
+    <main>
+      <div class="container page-container">
+        <section class="hero-section" id="hero">
+          <div class="hero-content">
+            <span class="tag">Discord Moderasyon Asistanı</span>
+            <h1>İnce ve naif bir tasarım ile topluluğunuzu koruyun.</h1>
+            <p>
+              Chat Filter, mesaj denetimini muafiyet katmanlarıyla destekler ve
+              modern dashboard deneyimiyle filtre yönetimini kolaylaştırır.
+            </p>
+            <div class="hero-actions">
+              <% if (isAuthenticated) { %>
+                <a class="button" href="/dashboard">Sunucularımı Yönet</a>
+              <% } else { %>
+                <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
+              <% } %>
+              <a class="button secondary" href="/ozellikler">Özellikleri İncele</a>
+            </div>
+          </div>
+          <div class="hero-glass">
+            <h2>Yeni neler var?</h2>
+            <ul>
+              <li>🛡️ Rol bazlı ve kanal bazlı muafiyet yönetimi</li>
+              <li>🎛️ İnce ayarlı dashboard kartları ve profil alanı</li>
+              <li>💎 Premium lisans akışı ve gelişmiş durum kartları</li>
+            </ul>
+          </div>
+        </section>
+
+        <% if (Array.isArray(featureSpotlights) && featureSpotlights.length) { %>
+          <section class="spotlight-section" id="features">
+            <h2>Öne çıkan yetenekler</h2>
+            <p class="section-lead">
+              Filtre çekirdeği, muafiyet katmanı ve dashboard deneyimi tek bir
+              ekosistem içinde birleşir.
+            </p>
+            <div class="spotlight-rail">
+              <% featureSpotlights.forEach(function (feature) { %>
+                <article class="spotlight-card">
+                  <div class="spotlight-icon"><%= feature.icon %></div>
+                  <h3><%= feature.title %></h3>
+                  <p><%= feature.description %></p>
+                </article>
+              <% }) %>
+            </div>
+            <a class="inline-link" href="/ozellikler">Tüm özellikleri incele →</a>
+          </section>
+        <% } %>
+
+        <% if (Array.isArray(schematics) && schematics.length) { %>
+          <section class="schematic-preview" id="dashboard">
+            <h2>Filtreleme akışı nasıl çalışır?</h2>
+            <div class="preview-card">
+              <div>
+                <h4><%= schematics[0].title %></h4>
+                <p><%= schematics[0].lead %></p>
+              </div>
+              <div class="step-list">
+                <% schematics[0].steps.slice(0, 3).forEach(function (step) { %>
+                  <div class="step-item">
+                    <span><%= step.label %></span>
+                    <p><strong><%= step.title %>:</strong> <%= step.description %></p>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+          </section>
+        <% } %>
+
+        <% if (Array.isArray(commandHighlights) && commandHighlights.length) { %>
+          <section class="command-preview" id="commands">
+            <h2>Komut kataloğuna hızlı bakış</h2>
+            <table class="command-table compact">
+              <thead>
+                <tr>
+                  <th>Komut</th>
+                  <th>Tür</th>
+                  <th>Açıklama</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% commandHighlights.forEach(function (command) { %>
+                  <tr>
+                    <td><strong><%= command.name %></strong></td>
+                    <td><%= command.type %></td>
+                    <td><%= command.description %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <a class="inline-link" href="/komutlar">Tüm komutları gör →</a>
+          </section>
+        <% } %>
+
+        <section class="section" id="premium">
+          <h2>Premium ile daha fazlası</h2>
+          <p class="section-lead">
+            Standart plan <%= defaultLimitLabel %> sınırı sunarken premium ile
+            limitinizi <%= premiumLimitLabel %> seviyesine yükseltebilirsiniz.
+          </p>
+          <% if (Array.isArray(premiumFeatures) && premiumFeatures.length) { %>
+            <div class="feature-grid premium-grid">
+              <% premiumFeatures.forEach(function (feature) { %>
+                <article class="feature-card premium-card">
+                  <div class="feature-icon"><%= feature.icon %></div>
+                  <h3><%= feature.title %></h3>
+                  <p><%= feature.description %></p>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+          <% if (premiumEnabled) { %>
+            <div class="premium-banner refined">
+              <div>
+                <h3>Premium anahtarınızı kullanın</h3>
+                <p>
+                  Dashboard'dan lisans kodunu girerek veya !premium komutu ile
+                  aktif ederek filtre kapasitenizi hemen artırın.
+                </p>
+              </div>
+              <% if (isAuthenticated) { %>
+                <a class="button" href="/dashboard">Sunucumu Yükselt</a>
+              <% } else { %>
+                <a class="button" href="/auth/discord">Giriş Yap</a>
+              <% } %>
+            </div>
+          <% } else { %>
+            <div class="premium-banner muted">
+              <div>
+                <h3>Premium çok yakında</h3>
+                <p>
+                  Yeni avantajları duyurmak için bizi takip edin ve güncellemeyi
+                  kaçırmayın.
+                </p>
+              </div>
+            </div>
+          <% } %>
+        </section>
+
+        <section class="cta-card">
+          <h2>Topluluğunuzu güvende tutmaya hazır mısınız?</h2>
+          <p>
+            Chat Filter, moderasyon ekibinizin yükünü azaltmak için tasarlandı.
+            Discord hesabınızla giriş yapın ve birkaç dakika içinde filtrelerinizi
+            düzenlemeye başlayın.
+          </p>
+          <% if (isAuthenticated) { %>
+            <a class="button" href="/dashboard">Dashboard'a Git</a>
+          <% } else { %>
+            <a class="button" href="/auth/discord">Discord ile Başlayın</a>
+          <% } %>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer', { isHome: true }) %>
+  </body>
+</html>

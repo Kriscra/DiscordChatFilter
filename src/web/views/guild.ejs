@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= guild.name %> | Chat Filter Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container">
+        <section class="section">
+          <div class="page-header">
+            <h1 class="page-title"><%= guild.name %> Filtre Yönetimi</h1>
+            <p class="page-subtitle">
+              Sunucunuzdaki yasaklı kelimeleri tek yerden yönetin. Eklediğiniz
+              veya kaldırdığınız her kelime bot ile anında senkronize edilir.
+            </p>
+          </div>
+          <% if (flashMessage) { %>
+            <div class="message <%= flashType %>"><%= flashMessage %></div>
+          <% } %>
+          <div class="layout-grid">
+            <div class="surface-card manager-card stretch">
+              <div class="card-header">
+                <h2>Kelime listesi</h2>
+                <span class="badge"><%= wordLimitLabel %></span>
+              </div>
+              <p class="card-subtitle">
+                Bu sunucuda <strong><%= words.length %></strong> kelime filtreleniyor.
+                <% if (remainingSlots !== null) { %>
+                  <span>Kalan kota: <%= Math.max(remainingSlots, 0) %></span>
+                <% } else { %>
+                  <span>Kota: sınırsız</span>
+                <% } %>
+              </p>
+              <% if (words.length) { %>
+                <div class="word-chips">
+                  <% words.forEach(function (word) { %>
+                    <form
+                      method="POST"
+                      action="/dashboard/<%= guild.id %>/words"
+                      class="word-chip"
+                    >
+                      <input type="hidden" name="action" value="remove" />
+                      <input type="hidden" name="word" value="<%= word %>" />
+                      <button
+                        class="chip-button"
+                        type="submit"
+                        title="Kelimeyi kaldır"
+                      >
+                        <span><%= word %></span>
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    </form>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="empty">Bu sunucu için kayıtlı kelime bulunmuyor.</div>
+              <% } %>
+              <div class="form-divider"></div>
+              <form
+                method="POST"
+                action="/dashboard/<%= guild.id %>/words"
+                class="word-form"
+              >
+                <label for="words-input">Kelime ekle</label>
+                <textarea
+                  id="words-input"
+                  name="words"
+                  rows="4"
+                  placeholder="Her satıra bir kelime yazın veya virgülle ayırın."
+                  required
+                ></textarea>
+                <p class="form-hint">
+                  Birden fazla kelime eklemek için her satırı ayrı kullanın. Çoğaltılan kelimeler otomatik olarak atlanır.
+                </p>
+                <div class="form-actions">
+                  <button class="button" type="submit" name="action" value="add">
+                    Kelimeleri Ekle
+                  </button>
+                  <a class="button secondary" href="/dashboard">Sunuculara Dön</a>
+                </div>
+              </form>
+            </div>
+            <div class="surface-card manager-card stretch">
+              <div class="card-header">
+                <h2>Muafiyetler</h2>
+                <span class="badge muted">Gerçek zamanlı</span>
+              </div>
+              <p class="card-subtitle">
+                Belirli kanallar veya rolleri filtre kontrolünden muaf tutun.
+                Seçimleri kaydettikten sonra bot tüm yeni iletileri bu ayarlara
+                göre değerlendirir.
+              </p>
+              <div class="exemption-grid">
+                <div class="exemption-column">
+                  <h3>Muaf Kanallar</h3>
+                  <form
+                    method="POST"
+                    action="/dashboard/<%= guild.id %>/exemptions/channels"
+                    class="exemption-form"
+                  >
+                    <label for="channel-select">Filtre dışı kalacak kanallar</label>
+                    <select id="channel-select" name="channels" multiple size="8">
+                      <% channelOptions.forEach(function (channel) { %>
+                        <option
+                          value="<%= channel.id %>"
+                          <%= channel.exempt ? 'selected' : '' %>
+                        >
+                          <%= channel.mentionPrefix %><%= channel.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                    <p class="form-hint">
+                      Tüm kanallarda filtre aktif olsun istiyorsanız seçimleri
+                      temizleyin ve formu gönderin.
+                    </p>
+                    <button class="button" type="submit">Muaf Kanalları Güncelle</button>
+                  </form>
+                  <% if (selectedChannels.length) { %>
+                    <ul class="selection-list">
+                      <% selectedChannels.forEach(function (channel) { %>
+                        <li>
+                          <span><%= channel.mentionPrefix %><%= channel.name %></span>
+                          <% if (channel.missing) { %>
+                            <small>(silinmiş)</small>
+                          <% } %>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } else { %>
+                    <p class="form-hint">Şu anda muaf kanal bulunmuyor.</p>
+                  <% } %>
+                </div>
+                <div class="exemption-column">
+                  <h3>Muaf Roller</h3>
+                  <form
+                    method="POST"
+                    action="/dashboard/<%= guild.id %>/exemptions/roles"
+                    class="exemption-form"
+                  >
+                    <label for="role-select">Filtre dışı kalacak roller</label>
+                    <select id="role-select" name="roles" multiple size="8">
+                      <% roleOptions.forEach(function (role) { %>
+                        <option
+                          value="<%= role.id %>"
+                          <%= role.exempt ? 'selected' : '' %>
+                        >
+                          <%= role.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                    <p class="form-hint">
+                      Moderatör veya yönetici rollerini muaf tutarak güvenilir
+                      ekip üyelerinin daha esnek iletişim kurmasını sağlayın.
+                    </p>
+                    <button class="button" type="submit">Muaf Rolleri Güncelle</button>
+                  </form>
+                  <% if (selectedRoles.length) { %>
+                    <ul class="selection-list">
+                      <% selectedRoles.forEach(function (role) { %>
+                        <li>
+                          <span><%= role.name %></span>
+                          <% if (role.missing) { %>
+                            <small>(silinmiş)</small>
+                          <% } %>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } else { %>
+                    <p class="form-hint">Şu anda muaf rol bulunmuyor.</p>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <div class="surface-card manager-card stretch premium-card">
+              <div class="card-header">
+                <h2>Premium durumu</h2>
+                <span
+                  class="badge <%= premiumStatus.isPremium ? 'success' : premiumStatus.expired ? 'warning' : 'muted' %>"
+                >
+                  <%= premiumStatus.isPremium ? 'Aktif' : premiumStatus.expired ? 'Süresi Doldu' : 'Standart' %>
+                </span>
+              </div>
+              <p class="card-subtitle">
+                <% if (premiumStatus.isPremium) { %>
+                  Premium ile kotanız <strong><%= premiumLimitLabel %></strong> seviyesine yükseltildi.
+                <% } else { %>
+                  Standart plan kotası <strong><%= defaultLimitLabel %></strong> ile sınırlıdır.
+                <% } %>
+              </p>
+              <% if (premiumStatus.licenseKey) { %>
+                <div class="premium-license">
+                  <span>Lisans Anahtarı:</span>
+                  <code><%= premiumStatus.licenseKey %></code>
+                </div>
+                <dl class="premium-license-meta">
+                  <% if (premiumDurationLabel) { %>
+                    <div>
+                      <dt>Süre</dt>
+                      <dd><%= premiumDurationLabel %></dd>
+                    </div>
+                  <% } %>
+                  <% if (premiumActivatedLabel) { %>
+                    <div>
+                      <dt>Başlangıç</dt>
+                      <dd><%= premiumActivatedLabel %></dd>
+                    </div>
+                  <% } %>
+                  <div>
+                    <dt>Bitiş</dt>
+                    <dd><%= premiumExpiresLabel ?? 'Süresiz' %></dd>
+                  </div>
+                  <% if (premiumRemainingLabel) { %>
+                    <div>
+                      <dt>Durum</dt>
+                      <dd><%= premiumRemainingLabel %></dd>
+                    </div>
+                  <% } %>
+                </dl>
+              <% } %>
+              <% if (!premiumStatus.isPremium && premiumStatus.expired) { %>
+                <p class="form-hint warning">
+                  Lisans süresi sona erdi. Yeni bir premium anahtarı kullanarak planınızı yeniden etkinleştirebilirsiniz.
+                </p>
+              <% } %>
+              <% if (premiumEnabled) { %>
+                <% if (premiumStatus.isPremium) { %>
+                  <p class="form-hint">
+                    Premium avantajları aktiftir. <strong>/premium</strong> komutunu kullanarak Discord üzerinden durumu görüntüleyebilirsiniz.
+                  </p>
+                <% } else { %>
+                  <form
+                    method="POST"
+                    action="/dashboard/<%= guild.id %>/premium"
+                    class="premium-form"
+                  >
+                    <label for="license-key">Premium lisans anahtarı</label>
+                    <input
+                      id="license-key"
+                      type="text"
+                      name="licenseKey"
+                      placeholder="CHATFILTER-XXXX-XXXX"
+                      maxlength="120"
+                      required
+                    />
+                    <button class="button" type="submit">Premium'u Etkinleştir</button>
+                  </form>
+                <% } %>
+              <% } else { %>
+                <p class="form-hint">
+                  Premium sistemi yakında etkinleşecek. Güncellemeler için bizi takip edin.
+                </p>
+              <% } %>
+              <div class="premium-benefits">
+                <h3>Avantajlar</h3>
+                <ul>
+                  <li>Genişletilmiş kelime kotası: <%= premiumLimitLabel %></li>
+                  <li>Gelişmiş raporlama ve tema seçenekleri</li>
+                  <li>Öncelikli destek ve roadmap erişimi</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>

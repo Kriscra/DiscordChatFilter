@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sunucularım | Chat Filter Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container">
+        <section class="section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Sunucularım</h1>
+              <p class="page-subtitle">
+                Yönetici olduğunuz ve botun bulunduğu sunucular için filtre
+                ayarlarını tek bir panelden yönetin. Muafiyetler ve kelime
+                listeleri anında eşitlenir.
+              </p>
+            </div>
+            <div class="header-actions">
+              <% if (inviteUrl) { %>
+                <a class="button ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">
+                  Botu Sunucuma Ekle
+                </a>
+              <% } %>
+            </div>
+          </div>
+          <% if (premiumEnabled) { %>
+            <div class="info-banner subtle">
+              <div>
+                <strong>Premium avantajları</strong>
+                <p>
+                  Standart plan <%= defaultLimitLabel %>, premium plan ise
+                  <%= premiumLimitLabel %> kelime kotası sunar. Lisansınızı
+                  dashboard'dan veya !premium komutu ile etkinleştirebilirsiniz.
+                </p>
+              </div>
+              <a class="inline-link" href="/#premium">Detayları Gör</a>
+            </div>
+          <% } %>
+          <div class="surface-card manager-card">
+            <% if (!guilds.length) { %>
+              <div class="empty">
+                Yönetici yetkisine sahip olduğunuz ve botun bulunduğu herhangi
+                bir sunucu bulunamadı. Botun davet edildiğinden ve Discord OAuth
+                ekranında gerekli izinleri verdiğinizden emin olun.
+              </div>
+            <% } else { %>
+              <ul class="guild-list">
+                <% guilds.forEach(function (guild) { %>
+                  <li class="guild-card">
+                    <strong><%= guild.name %></strong>
+                    <p>Filtre kelimelerini görüntüleyin, ekleyin veya kaldırın.</p>
+                    <a class="button" href="/dashboard/<%= guild.id %>">Paneli Aç</a>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
+          </div>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>
