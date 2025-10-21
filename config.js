@@ -3,7 +3,8 @@ module.exports = {
         Token: "DISCORD_BOT_TOKEN",
         Prefix: ".",
         BotDurum: "Chat Filter",
-        DurumTipi: "online"
+        DurumTipi: "online",
+        OwnerIds: ["YOUR_DISCORD_USER_ID"]
     },
     Dashboard: {
         ClientId: "DISCORD_CLIENT_ID",

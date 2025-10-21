@@ -6,6 +6,7 @@ const { Strategy: DiscordStrategy } = require("passport-discord");
 const config = require("../config");
 const filterStore = require("../database/filterStore");
 const premiumStore = require("../database/premiumStore");
+const { DAY_IN_MS, formatDurationLabel } = require("../utils/duration");
 const { normalizeWordInput } = require("../utils/text");
 
 const ADMINISTRATOR_PERMISSION = BigInt(0x00000008);
@@ -38,6 +39,12 @@ const COMMAND_CATALOG = [
     type: "Mesaj & Slash",
     description:
       "Premium durumunu görüntüler ve lisans anahtarı kullanarak planınızı yükseltmenizi sağlar.",
+  },
+  {
+    name: "!premiumolustur /premiumkod",
+    type: "Mesaj & Slash",
+    description:
+      "Bot sahiplerinin süreli premium lisans anahtarları oluşturmasına olanak tanır.",
   },
 ];
 
@@ -246,6 +253,37 @@ function renderGuildDashboard(req, res, client, guildId) {
   delete req.session.dashboardMessageType;
 
   const premiumStatus = premiumStore.getGuildStatus(guildId);
+  const premiumLicense = premiumStatus.licenseKey
+    ? premiumStore.getLicenseMetadata(premiumStatus.licenseKey)
+    : null;
+  const activatedAt = premiumStatus.activatedAt
+    ? new Date(premiumStatus.activatedAt)
+    : null;
+  const expiresAt = premiumStatus.expiresAt
+    ? new Date(premiumStatus.expiresAt)
+    : null;
+  const activatedLabel =
+    activatedAt && Number.isFinite(activatedAt.getTime())
+      ? activatedAt.toLocaleDateString("tr-TR")
+      : null;
+  const expiresLabel =
+    expiresAt && Number.isFinite(expiresAt.getTime())
+      ? expiresAt.toLocaleDateString("tr-TR")
+      : null;
+  let remainingLabel = null;
+  if (expiresAt && Number.isFinite(expiresAt.getTime())) {
+    const diff = expiresAt.getTime() - Date.now();
+    if (diff <= 0) {
+      remainingLabel = "Süresi doldu";
+    } else {
+      const remainingDays = Math.ceil(diff / DAY_IN_MS);
+      remainingLabel = `${remainingDays} gün`;
+    }
+  }
+  const durationLabel = premiumLicense?.durationDays
+    ? formatDurationLabel(premiumLicense.durationDays) ??
+      `${premiumLicense.durationDays} gün`
+    : null;
   const wordLimit = filterStore.getWordLimit(guildId);
   const defaultLimit = premiumStore.getDefaultLimit();
   const premiumLimit = premiumStore.getPremiumLimit();
@@ -259,6 +297,7 @@ function renderGuildDashboard(req, res, client, guildId) {
     flashType,
     premiumEnabled: premiumStore.isEnabled(),
     premiumStatus,
+    premiumLicense,
     wordLimit,
     defaultLimit,
     premiumLimit,
@@ -266,6 +305,10 @@ function renderGuildDashboard(req, res, client, guildId) {
     defaultLimitLabel: formatWordLimitLabel(defaultLimit),
     premiumLimitLabel: formatWordLimitLabel(premiumLimit),
     remainingSlots,
+    premiumActivatedLabel: activatedLabel,
+    premiumExpiresLabel: expiresLabel,
+    premiumRemainingLabel: remainingLabel,
+    premiumDurationLabel: durationLabel,
   });
 }
 

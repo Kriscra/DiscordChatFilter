@@ -29,6 +29,7 @@ module.exports = {
           "📘 **/yardim** — Bu menüyü gösterir.",
           "🛡️ **/filtre** — Filtre yönetim panelini açar.",
           "💎 **/premium** — Premium durumunuzu görüntüler.",
+          "⚙️ **/premiumkod** — Bot sahipleri için süreli lisans anahtarı oluşturur.",
           "🔗 **/invite** — Davet bağlantısını paylaşır.",
           "📶 **/ping** — Botun gecikme değerini gösterir.",
         ].join("\n"),

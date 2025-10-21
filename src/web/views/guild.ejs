@@ -87,8 +87,10 @@
             <div class="surface-card manager-card stretch premium-card">
               <div class="card-header">
                 <h2>Premium durumu</h2>
-                <span class="badge <%= premiumStatus.isPremium ? 'success' : 'muted' %>">
-                  <%= premiumStatus.isPremium ? 'Aktif' : 'Standart' %>
+                <span
+                  class="badge <%= premiumStatus.isPremium ? 'success' : premiumStatus.expired ? 'warning' : 'muted' %>"
+                >
+                  <%= premiumStatus.isPremium ? 'Aktif' : premiumStatus.expired ? 'Süresi Doldu' : 'Standart' %>
                 </span>
               </div>
               <p class="card-subtitle">
@@ -98,11 +100,40 @@
                   Standart plan kotası <strong><%= defaultLimitLabel %></strong> ile sınırlıdır.
                 <% } %>
               </p>
-              <% if (premiumStatus.isPremium && premiumStatus.licenseKey) { %>
+              <% if (premiumStatus.licenseKey) { %>
                 <div class="premium-license">
                   <span>Lisans Anahtarı:</span>
                   <code><%= premiumStatus.licenseKey %></code>
                 </div>
+                <dl class="premium-license-meta">
+                  <% if (premiumDurationLabel) { %>
+                    <div>
+                      <dt>Süre</dt>
+                      <dd><%= premiumDurationLabel %></dd>
+                    </div>
+                  <% } %>
+                  <% if (premiumActivatedLabel) { %>
+                    <div>
+                      <dt>Başlangıç</dt>
+                      <dd><%= premiumActivatedLabel %></dd>
+                    </div>
+                  <% } %>
+                  <div>
+                    <dt>Bitiş</dt>
+                    <dd><%= premiumExpiresLabel ?? 'Süresiz' %></dd>
+                  </div>
+                  <% if (premiumRemainingLabel) { %>
+                    <div>
+                      <dt>Durum</dt>
+                      <dd><%= premiumRemainingLabel %></dd>
+                    </div>
+                  <% } %>
+                </dl>
+              <% } %>
+              <% if (!premiumStatus.isPremium && premiumStatus.expired) { %>
+                <p class="form-hint warning">
+                  Lisans süresi sona erdi. Yeni bir premium anahtarı kullanarak planınızı yeniden etkinleştirebilirsiniz.
+                </p>
               <% } %>
               <% if (premiumEnabled) { %>
                 <% if (premiumStatus.isPremium) { %>

@@ -17,10 +17,43 @@ function formatLimit(limit) {
   return `${limit} kelime`;
 }
 
+function formatDate(iso) {
+  if (!iso) {
+    return null;
+  }
+
+  const parsed = new Date(iso);
+  if (!Number.isFinite(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toLocaleDateString("tr-TR");
+}
+
+function formatRemaining(expiresAt) {
+  if (!expiresAt) {
+    return null;
+  }
+
+  const expiry = new Date(expiresAt);
+  if (!Number.isFinite(expiry.getTime())) {
+    return null;
+  }
+
+  const now = new Date();
+  const diff = expiry.getTime() - now.getTime();
+
+  if (diff <= 0) {
+    return "Süresi doldu";
+  }
+
+  const remainingDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  return `${remainingDays} gün`;
+}
+
 function buildPremiumEmbed(guildId) {
-  const { isPremium, licenseKey, activatedAt } = premiumStore.getGuildStatus(
-    guildId,
-  );
+  const { isPremium, licenseKey, activatedAt, expiresAt, expired } =
+    premiumStore.getGuildStatus(guildId);
   const words = filterStore.getWords(guildId);
   const wordLimit = filterStore.getWordLimit(guildId);
   const defaultLimit = premiumStore.getDefaultLimit();
@@ -63,13 +96,29 @@ function buildPremiumEmbed(guildId) {
     });
   }
 
-  if (isPremium && licenseKey) {
-    const activatedLabel = activatedAt
-      ? new Date(activatedAt).toLocaleDateString("tr-TR")
-      : "Bilinmiyor";
+  if (licenseKey) {
+    const activatedLabel = formatDate(activatedAt) ?? "Bilinmiyor";
+    const expiresLabel = expiresAt ? formatDate(expiresAt) : "Süresiz";
+    const remaining = formatRemaining(expiresAt);
+    const licenseMetadata = premiumStore.getLicenseMetadata(licenseKey);
+    const durationLabel = licenseMetadata?.durationDays
+      ? `${licenseMetadata.durationDays} gün`
+      : "Süresiz";
+
+    const details = [
+      `🔐 \`${licenseKey}\``,
+      `• Başlangıç: ${activatedLabel}`,
+      `• Süre: ${durationLabel}`,
+      `• Bitiş: ${expiresLabel}`,
+    ];
+
+    if (remaining) {
+      details.push(`• Kalan: ${remaining}`);
+    }
+
     embed.addFields({
-      name: "Lisans Anahtarı",
-      value: `🔐 \`${licenseKey}\` (Aktifleşme: ${activatedLabel})`,
+      name: isPremium ? "Aktif Lisans" : expired ? "Süresi Dolan Lisans" : "Lisans Bilgisi",
+      value: details.join("\n"),
     });
   }
 
@@ -85,15 +134,13 @@ function buildPremiumComponents(guildId) {
     return [];
   }
 
-  const { isPremium } = premiumStore.getGuildStatus(guildId);
+  const { isPremium, expired } = premiumStore.getGuildStatus(guildId);
   const button = new ButtonBuilder()
     .setCustomId(BUTTON_REDEEM)
     .setStyle(ButtonStyle.Primary)
-    .setLabel(isPremium ? "Premium Aktif" : "Premium Anahtarı Kullan");
-
-  if (isPremium) {
-    button.setDisabled(true);
-  }
+    .setLabel(
+      isPremium && !expired ? "Yeni Lisans Kullan" : "Premium Anahtarı Kullan",
+    );
 
   return [new ActionRowBuilder().addComponents(button)];
 }
