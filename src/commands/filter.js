@@ -5,30 +5,34 @@ const {
   EmbedBuilder,
 } = require("discord.js");
 
-const FILTER_MENU_EMOJI_ADD = "<:Plus:1140208783512043743>";
-const FILTER_MENU_EMOJI_REMOVE = "<:minus:1140212230588207104>";
-const FILTER_MENU_EMOJI_LIST = "<:list:1140213657402347540>";
+const FILTER_MENU_EMOJI_ADD = "➕";
+const FILTER_MENU_EMOJI_REMOVE = "🗑️";
+const FILTER_MENU_EMOJI_LIST = "📋";
+
+const BUTTON_ADD = "filter:add";
+const BUTTON_REMOVE = "filter:remove";
+const BUTTON_LIST = "filter:list";
 
 module.exports = {
-  name: "filitre",
-  aliases: [],
+  name: "filtre",
+  aliases: ["filitre"],
   description: "Filtre yönetim menüsünü gösterir.",
   async execute(client, message) {
     const addButton = new ButtonBuilder()
-      .setCustomId("ekle")
-      .setLabel("Filitre Kelime Ekle")
+      .setCustomId(BUTTON_ADD)
+      .setLabel("Kelime Ekle")
       .setEmoji(FILTER_MENU_EMOJI_ADD)
       .setStyle(ButtonStyle.Success);
 
     const removeButton = new ButtonBuilder()
-      .setCustomId("cikart")
-      .setLabel("Filitre Kelime Çıkart")
+      .setCustomId(BUTTON_REMOVE)
+      .setLabel("Kelime Sil")
       .setEmoji(FILTER_MENU_EMOJI_REMOVE)
       .setStyle(ButtonStyle.Danger);
 
     const listButton = new ButtonBuilder()
-      .setCustomId("liste")
-      .setLabel("Filitre Kelime Liste")
+      .setCustomId(BUTTON_LIST)
+      .setLabel("Kelime Listesi")
       .setEmoji(FILTER_MENU_EMOJI_LIST)
       .setStyle(ButtonStyle.Secondary);
 
@@ -39,17 +43,17 @@ module.exports = {
     );
 
     const embed = new EmbedBuilder()
-      .setColor("#009eff")
-      .setTitle("Filitre Menüsü")
+      .setColor("#5f86ff")
+      .setTitle("Chat Filter — Filtre Yönetimi")
       .setDescription(
         [
-          `${FILTER_MENU_EMOJI_ADD} Butonuna tıklayarak kelime ekleyebilirsiniz.`,
-          `${FILTER_MENU_EMOJI_REMOVE} Butonuna tıklayarak kelime çıkartabilirsiniz.`,
-          `${FILTER_MENU_EMOJI_LIST} Butonuna tıklayarak kelime listesine bakabilirsiniz.`,
+          `${FILTER_MENU_EMOJI_ADD} Birden fazla kelimeyi aynı anda eklemek için butona tıklayın.`,
+          `${FILTER_MENU_EMOJI_REMOVE} Kayıtlı kelimeleri listeden seçerek saniyeler içinde silin.`,
+          `${FILTER_MENU_EMOJI_LIST} Güncel filtre listenizi gizliden görüntüleyin.`,
         ].join("\n"),
       )
       .setFooter({
-        text: "Aşağıdaki butonlardan seçim yapabilirsiniz.",
+        text: "Yalnızca yöneticiler değişiklik yapabilir.",
       })
       .setTimestamp();
 

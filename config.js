@@ -11,5 +11,11 @@ module.exports = {
         CallbackURL: "http://localhost:3000/auth/discord/callback",
         SessionSecret: "super-secret-session-key",
         Port: 3000
+    },
+    Premium: {
+        Enabled: true,
+        DefaultLimit: 25,
+        PremiumLimit: 250,
+        LicenseKeys: ["CHATFILTER-PREMIUM-0001"]
     }
 }

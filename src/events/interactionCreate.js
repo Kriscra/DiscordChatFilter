@@ -4,16 +4,31 @@ const {
   Events,
   ModalBuilder,
   PermissionsBitField,
+  StringSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle,
 } = require("discord.js");
 const filterStore = require("../database/filterStore");
-const { chunkWords } = require("../utils/text");
+const premiumStore = require("../database/premiumStore");
+const { chunkWords, normalizeWordInput } = require("../utils/text");
+const {
+  BUTTON_REDEEM,
+  buildPremiumComponents,
+  buildPremiumEmbed,
+} = require("../utils/premium");
 
-const MODAL_ADD_ID = "modalekle";
-const MODAL_REMOVE_ID = "modalcikart";
-const INPUT_ADD_ID = "modal_ekle";
-const INPUT_REMOVE_ID = "modal_cikart";
+const BUTTON_ADD = "filter:add";
+const BUTTON_REMOVE = "filter:remove";
+const BUTTON_LIST = "filter:list";
+const MODAL_ADD_ID = "filter:add:modal";
+const INPUT_ADD_ID = "filter_add_words";
+const SELECT_REMOVE_ID = "filter:remove:select";
+const MODAL_PREMIUM_ID = "premium:modal";
+const INPUT_PREMIUM_KEY = "premium_key";
+
+function formatWordLimit(limit) {
+  return limit === Infinity ? "sınırsız" : `${limit} kelime`;
+}
 
 function ensureAdministrator(interaction) {
   const member = interaction.member;
@@ -33,15 +48,20 @@ function ensureAdministrator(interaction) {
 }
 
 function showAddModal(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
   const modal = new ModalBuilder()
     .setCustomId(MODAL_ADD_ID)
     .setTitle("Chat Filter - Kelime Ekle");
 
   const input = new TextInputBuilder()
     .setCustomId(INPUT_ADD_ID)
-    .setLabel("Eklenecek kelimeyi girin")
-    .setMaxLength(100)
-    .setStyle(TextInputStyle.Short);
+    .setLabel("Eklenecek kelimeleri girin")
+    .setPlaceholder("Her satıra bir kelime yazabilir veya virgül ile ayırabilirsiniz.")
+    .setMaxLength(400)
+    .setStyle(TextInputStyle.Paragraph);
 
   const row = new ActionRowBuilder().addComponents(input);
   modal.addComponents(row);
@@ -49,21 +69,46 @@ function showAddModal(interaction) {
   return interaction.showModal(modal);
 }
 
-function showRemoveModal(interaction) {
-  const modal = new ModalBuilder()
-    .setCustomId(MODAL_REMOVE_ID)
-    .setTitle("Chat Filter - Kelime Çıkart");
+function showRemoveMenu(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
 
-  const input = new TextInputBuilder()
-    .setCustomId(INPUT_REMOVE_ID)
-    .setLabel("Silinecek kelimeyi girin")
-    .setMaxLength(100)
-    .setStyle(TextInputStyle.Short);
+  const words = filterStore.getWords(interaction.guildId);
 
-  const row = new ActionRowBuilder().addComponents(input);
-  modal.addComponents(row);
+  if (!words.length) {
+    interaction.reply({
+      content: "Silinecek kelime bulunmuyor.",
+      ephemeral: true,
+    });
+    return;
+  }
 
-  return interaction.showModal(modal);
+  const options = words.slice(0, 25).map((word) => {
+    const label = word.length > 100 ? `${word.slice(0, 97)}...` : word;
+    return {
+      label,
+      value: word,
+    };
+  });
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(SELECT_REMOVE_ID)
+    .setPlaceholder("Silmek istediğiniz kelimeleri seçin")
+    .setMinValues(1)
+    .setMaxValues(Math.min(options.length, 25))
+    .addOptions(options);
+
+  const content =
+    words.length > 25
+      ? "İlk 25 kelime gösteriliyor. Lütfen kaldırmak istediğiniz kelimeleri seçin."
+      : "Kaldırmak istediğiniz kelimeleri seçin.";
+
+  return interaction.reply({
+    content,
+    components: [new ActionRowBuilder().addComponents(menu)],
+    ephemeral: true,
+  });
 }
 
 async function listWords(interaction) {
@@ -80,7 +125,7 @@ async function listWords(interaction) {
   const chunks = chunkWords(words);
 
   await interaction.reply({
-    content: "Filitredeki kelimeler aşağıda listelenmiştir.",
+    content: "Filtredeki kelimeler aşağıda listelenmiştir.",
     ephemeral: true,
   });
 
@@ -98,47 +143,223 @@ async function handleAddModal(interaction) {
     return;
   }
 
-  const word = interaction.fields.getTextInputValue(INPUT_ADD_ID);
-  const result = filterStore.addWord(interaction.guildId, word);
+  const rawInput = interaction.fields.getTextInputValue(INPUT_ADD_ID);
+  const words = normalizeWordInput(rawInput);
 
-  if (!result.added) {
-    const reason =
-      result.reason === "DUPLICATE"
-        ? "Bu kelime zaten kayıtlı."
-        : "Geçerli bir kelime girmelisiniz.";
-
-    await interaction.reply({ content: reason, ephemeral: true });
+  if (!words.length) {
+    await interaction.reply({
+      content: "Lütfen en az bir kelime girin.",
+      ephemeral: true,
+    });
     return;
   }
 
-  await interaction.reply({
-    content: "Kelime başarıyla filtreye eklendi.",
-    ephemeral: true,
-  });
-}
+  const result = filterStore.addWords(interaction.guildId, words);
 
-async function handleRemoveModal(interaction) {
-  if (!ensureAdministrator(interaction)) {
-    return;
-  }
+  if (!result.added.length) {
+    let message = "Kelime eklenemedi. Lütfen girdilerinizi kontrol edin.";
 
-  const word = interaction.fields.getTextInputValue(INPUT_REMOVE_ID);
-  const result = filterStore.removeWord(interaction.guildId, word);
-
-  if (!result.removed) {
-    const message =
-      result.reason === "NOT_FOUND"
-        ? "Bu kelime sistemde kayıtlı değil."
-        : "Geçerli bir kelime girmelisiniz.";
+    if (result.reason === "MISSING_GUILD") {
+      message = "Sunucu bilgisi alınamadı.";
+    } else if (result.limitReached) {
+      const limitLabel = formatWordLimit(result.limit);
+      if (premiumStore.isEnabled() && !premiumStore.isPremium(interaction.guildId)) {
+        message = `Kelime kotanız ${limitLabel} ile sınırlı. Premium anahtarı kullanarak kapasitenizi ${formatWordLimit(premiumStore.getPremiumLimit())} seviyesine yükseltebilirsiniz.`;
+      } else {
+        message = `Kelime kotanız ${limitLabel} seviyesine ulaştı.`;
+      }
+    } else if (result.duplicates.length) {
+      message = "Girdiğiniz tüm kelimeler zaten kayıtlı.";
+    }
 
     await interaction.reply({ content: message, ephemeral: true });
     return;
   }
 
+  const summary = [];
+  const addedPreview = result.added
+    .slice(0, 5)
+    .map((word) => `\`${word}\``)
+    .join(", ");
+
+  if (result.added.length > 5) {
+    summary.push(`➕ ${result.added.length} kelime eklendi (${addedPreview}...)`);
+  } else {
+    summary.push(`➕ Eklenen kelimeler: ${addedPreview}`);
+  }
+
+  if (result.duplicates.length) {
+    const duplicatePreview = result.duplicates
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+    summary.push(
+      result.duplicates.length > 5
+        ? `⚠️ Zaten kayıtlı olan ${result.duplicates.length} kelime atlandı (${duplicatePreview}...)`
+        : `⚠️ Zaten kayıtlı: ${duplicatePreview}`,
+    );
+  }
+
+  if (result.limitReached) {
+    const limitLabel = formatWordLimit(result.limit);
+    if (premiumStore.isEnabled() && !premiumStore.isPremium(interaction.guildId)) {
+      summary.push(
+        `ℹ️ Kelime kotanız ${limitLabel} seviyesine ulaştı. Premium ile kapasitenizi ${formatWordLimit(premiumStore.getPremiumLimit())} seviyesine yükseltebilirsiniz.`,
+      );
+    } else {
+      summary.push(`ℹ️ Kelime kotanız ${limitLabel} seviyesine ulaştı.`);
+    }
+  }
+
   await interaction.reply({
-    content: "Kelime sistemden kaldırıldı.",
+    content: summary.join("\n"),
     ephemeral: true,
   });
+}
+
+async function handleRemoveSelect(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  const selections = Array.isArray(interaction.values)
+    ? interaction.values
+    : [];
+
+  if (!selections.length) {
+    await interaction.update({
+      content: "Hiçbir kelime seçilmedi.",
+      components: [],
+    });
+    return;
+  }
+
+  const result = filterStore.removeWords(interaction.guildId, selections);
+  const summary = [];
+
+  if (result.removed.length) {
+    const removedPreview = result.removed
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+
+    summary.push(
+      result.removed.length > 5
+        ? `🗑️ ${result.removed.length} kelime kaldırıldı (${removedPreview}...)`
+        : `🗑️ Kaldırılan kelimeler: ${removedPreview}`,
+    );
+  }
+
+  if (result.notFound.length) {
+    const notFoundPreview = result.notFound
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+
+    summary.push(
+      result.notFound.length > 5
+        ? `⚠️ ${result.notFound.length} kelime bulunamadı (${notFoundPreview}...)`
+        : `⚠️ Bulunamayan kelimeler: ${notFoundPreview}`,
+    );
+  }
+
+  if (!summary.length) {
+    summary.push("Herhangi bir kelime kaldırılamadı.");
+  }
+
+  await interaction.update({
+    content: summary.join("\n"),
+    components: [],
+  });
+}
+
+async function showPremiumRedeemModal(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  if (!premiumStore.isEnabled()) {
+    await interaction.reply({
+      content: "Premium sistemi şu anda etkin değil.",
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const modal = new ModalBuilder()
+    .setCustomId(MODAL_PREMIUM_ID)
+    .setTitle("Chat Filter - Premium Anahtarı");
+
+  const input = new TextInputBuilder()
+    .setCustomId(INPUT_PREMIUM_KEY)
+    .setLabel("Premium lisans anahtarınızı girin")
+    .setPlaceholder("CHATFILTER-XXXX-XXXX")
+    .setMaxLength(120)
+    .setRequired(true)
+    .setStyle(TextInputStyle.Short);
+
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+  return interaction.showModal(modal);
+}
+
+async function handlePremiumRedeemModal(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  if (!premiumStore.isEnabled()) {
+    await interaction.reply({
+      content: "Premium sistemi şu anda etkin değil.",
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const licenseKey = interaction.fields.getTextInputValue(INPUT_PREMIUM_KEY);
+  const result = premiumStore.redeemLicense(interaction.guildId, licenseKey);
+
+  if (!result.success) {
+    let message = "Lisans anahtarı doğrulanamadı.";
+
+    switch (result.reason) {
+      case "INVALID":
+        message = "Lütfen geçerli bir lisans anahtarı girin.";
+        break;
+      case "NOT_FOUND":
+        message = "Bu lisans anahtarı geçerli değil.";
+        break;
+      case "USED":
+        message = "Bu lisans anahtarı başka bir sunucuda kullanılmış.";
+        break;
+      case "MISSING_GUILD":
+        message = "Sunucu bilgisi alınamadı.";
+        break;
+      case "DISABLED":
+        message = "Premium sistemi şu anda etkin değil.";
+        break;
+      default:
+        break;
+    }
+
+    await interaction.reply({ content: message, ephemeral: true });
+    return;
+  }
+
+  const embed = buildPremiumEmbed(interaction.guildId);
+  const components = buildPremiumComponents(interaction.guildId);
+
+  const payload = {
+    content: "💎 Premium başarıyla etkinleştirildi!",
+    embeds: [embed],
+    ephemeral: true,
+  };
+
+  if (components.length) {
+    payload.components = components;
+  }
+
+  await interaction.reply(payload);
 }
 
 module.exports = {
@@ -187,18 +408,31 @@ module.exports = {
     }
 
     if (interaction.isButton()) {
-      if (interaction.customId === "ekle") {
+      if (interaction.customId === BUTTON_ADD) {
         await showAddModal(interaction);
         return;
       }
 
-      if (interaction.customId === "cikart") {
-        await showRemoveModal(interaction);
+      if (interaction.customId === BUTTON_REMOVE) {
+        await showRemoveMenu(interaction);
         return;
       }
 
-      if (interaction.customId === "liste") {
+      if (interaction.customId === BUTTON_LIST) {
         await listWords(interaction);
+        return;
+      }
+
+      if (interaction.customId === BUTTON_REDEEM) {
+        await showPremiumRedeemModal(interaction);
+      }
+
+      return;
+    }
+
+    if (interaction.isStringSelectMenu()) {
+      if (interaction.customId === SELECT_REMOVE_ID) {
+        await handleRemoveSelect(interaction);
       }
 
       return;
@@ -213,8 +447,8 @@ module.exports = {
       return;
     }
 
-    if (interaction.customId === MODAL_REMOVE_ID) {
-      await handleRemoveModal(interaction);
+    if (interaction.customId === MODAL_PREMIUM_ID) {
+      await handlePremiumRedeemModal(interaction);
     }
   },
 };

@@ -1,8 +1,25 @@
 const RacheDB = require("rachedb");
+const premiumStore = require("./premiumStore");
 
 const DATABASE_NAME = "filtered_words";
 const DATABASE_FOLDER = "database";
 const KEY_PREFIX = "filter_words:";
+
+function normalizeWord(word) {
+  return typeof word === "string" ? word.trim() : "";
+}
+
+function normalizeWordList(words) {
+  if (!Array.isArray(words)) {
+    return [];
+  }
+
+  const normalized = words
+    .map((word) => normalizeWord(word))
+    .filter((word) => word.length > 0);
+
+  return Array.from(new Set(normalized));
+}
 
 class FilterStore {
   constructor() {
@@ -45,47 +62,119 @@ class FilterStore {
     );
   }
 
-  addWord(guildId, word) {
+  getWordLimit(guildId) {
+    return premiumStore.getWordLimitForGuild(guildId);
+  }
+
+  addWords(guildId, words) {
     if (!guildId) {
-      return { added: false, reason: "MISSING_GUILD" };
+      return { added: [], duplicates: [], limitReached: false, reason: "MISSING_GUILD" };
     }
 
-    const normalized = (word ?? "").trim();
-    if (!normalized.length) {
-      return { added: false, reason: "EMPTY" };
+    const normalizedList = normalizeWordList(words);
+    if (!normalizedList.length) {
+      return { added: [], duplicates: [], limitReached: false, reason: "EMPTY" };
     }
 
-    if (this.hasWord(guildId, normalized)) {
-      return { added: false, reason: "DUPLICATE" };
+    const existing = this.getWords(guildId);
+    const existingLower = new Set(existing.map((word) => word.toLowerCase()));
+    const duplicates = normalizedList.filter((word) =>
+      existingLower.has(word.toLowerCase()),
+    );
+
+    const uniqueToAdd = normalizedList.filter(
+      (word) => !existingLower.has(word.toLowerCase()),
+    );
+
+    const limit = this.getWordLimit(guildId);
+    const availableSlots =
+      limit === Infinity ? Infinity : Math.max(limit - existing.length, 0);
+    const canAdd =
+      availableSlots === Infinity
+        ? uniqueToAdd
+        : uniqueToAdd.slice(0, availableSlots);
+
+    const added = [];
+
+    if (canAdd.length) {
+      const updated = existing.concat(canAdd);
+      this.db.set(this.getKey(guildId), updated);
+      added.push(...canAdd);
     }
 
-    const words = this.getWords(guildId);
-    words.push(normalized);
-    this.db.set(this.getKey(guildId), words);
+    return {
+      added,
+      duplicates,
+      limitReached:
+        (limit !== Infinity && added.length < uniqueToAdd.length) ||
+        (limit !== Infinity && availableSlots === 0),
+      limit,
+    };
+  }
+
+  addWord(guildId, word) {
+    const result = this.addWords(guildId, [word]);
+    if (!result.added.length) {
+      return {
+        added: false,
+        reason: result.reason ||
+          (result.limitReached ? "LIMIT" : result.duplicates.length ? "DUPLICATE" : "EMPTY"),
+      };
+    }
 
     return { added: true };
   }
 
-  removeWord(guildId, word) {
+  removeWords(guildId, words) {
     if (!guildId) {
-      return { removed: false, reason: "MISSING_GUILD" };
+      return { removed: [], notFound: [], reason: "MISSING_GUILD" };
     }
 
-    const normalized = (word ?? "").trim();
-    if (!normalized.length) {
-      return { removed: false, reason: "EMPTY" };
+    const normalizedList = normalizeWordList(words);
+    if (!normalizedList.length) {
+      return { removed: [], notFound: [], reason: "EMPTY" };
     }
 
-    const words = this.getWords(guildId);
-    const filtered = words.filter(
-      (storedWord) => storedWord.toLowerCase() !== normalized.toLowerCase(),
+    const existing = this.getWords(guildId);
+    if (!existing.length) {
+      return { removed: [], notFound: normalizedList };
+    }
+
+    const existingLower = new Set(existing.map((word) => word.toLowerCase()));
+    const removed = [];
+    const notFound = [];
+
+    for (const word of normalizedList) {
+      if (existingLower.has(word.toLowerCase())) {
+        removed.push(word);
+      } else {
+        notFound.push(word);
+      }
+    }
+
+    if (!removed.length) {
+      return { removed: [], notFound };
+    }
+
+    const removedLower = new Set(removed.map((word) => word.toLowerCase()));
+    const filtered = existing.filter(
+      (storedWord) => !removedLower.has(storedWord.toLowerCase()),
     );
 
-    if (filtered.length === words.length) {
-      return { removed: false, reason: "NOT_FOUND" };
+    this.db.set(this.getKey(guildId), filtered);
+
+    return { removed, notFound };
+  }
+
+  removeWord(guildId, word) {
+    const result = this.removeWords(guildId, [word]);
+    if (!result.removed.length) {
+      return {
+        removed: false,
+        reason: result.reason || (result.notFound.length ? "NOT_FOUND" : "EMPTY"),
+      };
     }
 
-    this.db.set(this.getKey(guildId), filtered);
     return { removed: true };
   }
 }

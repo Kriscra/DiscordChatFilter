@@ -18,6 +18,20 @@
               ayarlarını buradan kontrol edin. Her sunucu kendi kelime
               listesine sahiptir ve değişiklikler anında uygulanır.
             </p>
+            <% if (premiumEnabled) { %>
+              <div class="info-banner">
+                <div>
+                  <strong>Premium avantajları</strong>
+                  <p>
+                    Standart plan <%= defaultLimitLabel %> ile sınırlıdır.
+                    Premium üyelikte kotanızı <%= premiumLimitLabel %>
+                    seviyesine yükseltebilir ve gelişmiş raporları
+                    kullanabilirsiniz.
+                  </p>
+                </div>
+                <a class="button secondary" href="/#premium">Detayları Gör</a>
+              </div>
+            <% } %>
           </div>
           <div class="surface-card manager-card">
             <% if (!guilds.length) { %>

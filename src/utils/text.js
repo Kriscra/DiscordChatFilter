@@ -1,3 +1,14 @@
+function normalizeWordInput(input) {
+  if (Array.isArray(input)) {
+    input = input.join("\n");
+  }
+
+  return String(input ?? "")
+    .split(/[\n,;]+/)
+    .map((word) => word.trim())
+    .filter((word) => word.length > 0);
+}
+
 function chunkWords(words, chunkSize = 2000) {
   const sanitized = Array.isArray(words)
     ? words.filter((word) => typeof word === "string" && word.trim().length > 0)
@@ -30,5 +41,6 @@ function chunkWords(words, chunkSize = 2000) {
 }
 
 module.exports = {
+  normalizeWordInput,
   chunkWords,
 };

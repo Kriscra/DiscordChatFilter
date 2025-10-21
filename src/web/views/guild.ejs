@@ -18,43 +18,128 @@
               veya kaldırdığınız her kelime bot ile anında senkronize edilir.
             </p>
           </div>
-          <div class="surface-card manager-card">
-            <% if (flashMessage) { %>
-              <div class="message <%= flashType %>"><%= flashMessage %></div>
-            <% } %>
-            <% if (words.length) { %>
-              <div class="words">
-                <% words.forEach(function (word) { %>
-                  <span class="chip"><%= word %></span>
-                <% }) %>
+          <% if (flashMessage) { %>
+            <div class="message <%= flashType %>"><%= flashMessage %></div>
+          <% } %>
+          <div class="layout-grid">
+            <div class="surface-card manager-card stretch">
+              <div class="card-header">
+                <h2>Kelime listesi</h2>
+                <span class="badge"><%= wordLimitLabel %></span>
               </div>
-            <% } else { %>
-              <div class="empty">Bu sunucu için kayıtlı kelime bulunmuyor.</div>
-            <% } %>
-            <form method="POST" action="/dashboard/<%= guild.id %>/words">
-              <div class="row">
-                <input
-                  type="text"
-                  name="word"
-                  placeholder="Kelime"
-                  maxlength="100"
+              <p class="card-subtitle">
+                Bu sunucuda <strong><%= words.length %></strong> kelime filtreleniyor.
+                <% if (remainingSlots !== null) { %>
+                  <span>Kalan kota: <%= Math.max(remainingSlots, 0) %></span>
+                <% } else { %>
+                  <span>Kota: sınırsız</span>
+                <% } %>
+              </p>
+              <% if (words.length) { %>
+                <div class="word-chips">
+                  <% words.forEach(function (word) { %>
+                    <form
+                      method="POST"
+                      action="/dashboard/<%= guild.id %>/words"
+                      class="word-chip"
+                    >
+                      <input type="hidden" name="action" value="remove" />
+                      <input type="hidden" name="word" value="<%= word %>" />
+                      <button
+                        class="chip-button"
+                        type="submit"
+                        title="Kelimeyi kaldır"
+                      >
+                        <span><%= word %></span>
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    </form>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="empty">Bu sunucu için kayıtlı kelime bulunmuyor.</div>
+              <% } %>
+              <div class="form-divider"></div>
+              <form
+                method="POST"
+                action="/dashboard/<%= guild.id %>/words"
+                class="word-form"
+              >
+                <label for="words-input">Kelime ekle</label>
+                <textarea
+                  id="words-input"
+                  name="words"
+                  rows="4"
+                  placeholder="Her satıra bir kelime yazın veya virgülle ayırın."
                   required
-                />
-                <button class="button" type="submit" name="action" value="add">
-                  Kelime Ekle
-                </button>
-                <button
-                  class="button danger"
-                  type="submit"
-                  name="action"
-                  value="remove"
-                >
-                  Kelime Çıkart
-                </button>
+                ></textarea>
+                <p class="form-hint">
+                  Birden fazla kelime eklemek için her satırı ayrı kullanın. Çoğaltılan kelimeler otomatik olarak atlanır.
+                </p>
+                <div class="form-actions">
+                  <button class="button" type="submit" name="action" value="add">
+                    Kelimeleri Ekle
+                  </button>
+                  <a class="button secondary" href="/dashboard">Sunuculara Dön</a>
+                </div>
+              </form>
+            </div>
+            <div class="surface-card manager-card stretch premium-card">
+              <div class="card-header">
+                <h2>Premium durumu</h2>
+                <span class="badge <%= premiumStatus.isPremium ? 'success' : 'muted' %>">
+                  <%= premiumStatus.isPremium ? 'Aktif' : 'Standart' %>
+                </span>
               </div>
-            </form>
-            <div>
-              <a class="button secondary" href="/dashboard">Sunuculara Dön</a>
+              <p class="card-subtitle">
+                <% if (premiumStatus.isPremium) { %>
+                  Premium ile kotanız <strong><%= premiumLimitLabel %></strong> seviyesine yükseltildi.
+                <% } else { %>
+                  Standart plan kotası <strong><%= defaultLimitLabel %></strong> ile sınırlıdır.
+                <% } %>
+              </p>
+              <% if (premiumStatus.isPremium && premiumStatus.licenseKey) { %>
+                <div class="premium-license">
+                  <span>Lisans Anahtarı:</span>
+                  <code><%= premiumStatus.licenseKey %></code>
+                </div>
+              <% } %>
+              <% if (premiumEnabled) { %>
+                <% if (premiumStatus.isPremium) { %>
+                  <p class="form-hint">
+                    Premium avantajları aktiftir. <strong>/premium</strong> komutunu kullanarak Discord üzerinden durumu görüntüleyebilirsiniz.
+                  </p>
+                <% } else { %>
+                  <form
+                    method="POST"
+                    action="/dashboard/<%= guild.id %>/premium"
+                    class="premium-form"
+                  >
+                    <label for="license-key">Premium lisans anahtarı</label>
+                    <input
+                      id="license-key"
+                      type="text"
+                      name="licenseKey"
+                      placeholder="CHATFILTER-XXXX-XXXX"
+                      maxlength="120"
+                      required
+                    />
+                    <button class="button" type="submit">Premium'u Etkinleştir</button>
+                  </form>
+                <% } %>
+              <% } else { %>
+                <p class="form-hint">
+                  Premium sistemi yakında etkinleşecek. Güncellemeler için bizi takip edin.
+                </p>
+              <% } %>
+              <div class="premium-benefits">
+                <h3>Avantajlar</h3>
+                <ul>
+                  <li>Genişletilmiş kelime kotası: <%= premiumLimitLabel %></li>
+                  <li>Gelişmiş raporlama ve tema seçenekleri</li>
+                  <li>Öncelikli destek ve roadmap erişimi</li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>

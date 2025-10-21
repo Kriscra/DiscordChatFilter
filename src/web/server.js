@@ -5,15 +5,18 @@ const passport = require("passport");
 const { Strategy: DiscordStrategy } = require("passport-discord");
 const config = require("../config");
 const filterStore = require("../database/filterStore");
+const premiumStore = require("../database/premiumStore");
+const { normalizeWordInput } = require("../utils/text");
 
 const ADMINISTRATOR_PERMISSION = BigInt(0x00000008);
 let isStarted = false;
 
 const COMMAND_CATALOG = [
   {
-    name: "!filitre /filitre",
+    name: "!filtre /filtre",
     type: "Mesaj & Slash",
-    description: "Filtre yönetim menüsünü açar ve kelime butonlarını sunar.",
+    description:
+      "Toplu kelime ekleme, hızlı silme menüsü ve filtre listesine erişim sağlar.",
   },
   {
     name: "!yardım /yardım",
@@ -29,6 +32,33 @@ const COMMAND_CATALOG = [
     name: "!invite /invite",
     type: "Mesaj & Slash",
     description: "Sunucunuza botu eklemek için davet bağlantısı oluşturur.",
+  },
+  {
+    name: "!premium /premium",
+    type: "Mesaj & Slash",
+    description:
+      "Premium durumunu görüntüler ve lisans anahtarı kullanarak planınızı yükseltmenizi sağlar.",
+  },
+];
+
+const PREMIUM_FEATURES = [
+  {
+    icon: "💎",
+    title: "Genişletilmiş kelime kotası",
+    description:
+      "Standart plan sınırlarını aşarak yüzlerce kelimeyi tek panelde yönetebilirsiniz.",
+  },
+  {
+    icon: "📈",
+    title: "Detaylı raporlar",
+    description:
+      "Yakında gelecek istatistikler ve ihlal raporları ile moderasyon kararlarınızı güçlendirin.",
+  },
+  {
+    icon: "🎨",
+    title: "Özel tema seçenekleri",
+    description:
+      "Dashboard üzerinde premium temaları ve özelleştirilmiş görünümü etkinleştirin.",
   },
 ];
 
@@ -50,6 +80,94 @@ function getAdminGuilds(user, client) {
   return guilds
     .filter((guild) => hasAdministratorPermission(guild))
     .filter((guild) => client.guilds.cache.has(guild.id));
+}
+
+function formatWordLimitLabel(limit) {
+  return limit === Infinity ? "sınırsız" : `${limit} kelime`;
+}
+
+function summarizeAddResult(guildId, result) {
+  const parts = [];
+  let type = result.added.length ? "success" : "error";
+
+  if (result.added.length) {
+    const preview = result.added
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+
+    parts.push(
+      result.added.length > 5
+        ? `${result.added.length} kelime eklendi (${preview}...)`
+        : `Eklenen kelimeler: ${preview}`,
+    );
+  }
+
+  if (result.duplicates.length) {
+    const preview = result.duplicates
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+
+    parts.push(
+      result.duplicates.length > 5
+        ? `${result.duplicates.length} kelime zaten kayıtlı (${preview}...)`
+        : `Zaten kayıtlı olanlar: ${preview}`,
+    );
+  }
+
+  if (result.limitReached) {
+    const limitLabel = formatWordLimitLabel(result.limit);
+    const premiumHint =
+      premiumStore.isEnabled() && !premiumStore.isPremium(guildId)
+        ? ` Premium ile kapasitenizi ${formatWordLimitLabel(premiumStore.getPremiumLimit())} seviyesine yükseltebilirsiniz.`
+        : "";
+    parts.push(`Kelime kotanız ${limitLabel} seviyesine ulaştı.${premiumHint}`);
+  }
+
+  if (!parts.length) {
+    parts.push("Geçerli kelimeler girmeniz gerekiyor.");
+    type = "error";
+  }
+
+  return { message: parts.join(" "), type };
+}
+
+function summarizeRemoveResult(result) {
+  const parts = [];
+  let type = result.removed.length ? "success" : "error";
+
+  if (result.removed.length) {
+    const preview = result.removed
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+
+    parts.push(
+      result.removed.length > 5
+        ? `${result.removed.length} kelime kaldırıldı (${preview}...)`
+        : `Kaldırılan kelimeler: ${preview}`,
+    );
+  }
+
+  if (result.notFound.length) {
+    const preview = result.notFound
+      .slice(0, 5)
+      .map((word) => `\`${word}\``)
+      .join(", ");
+
+    parts.push(
+      result.notFound.length > 5
+        ? `${result.notFound.length} kelime bulunamadı (${preview}...)`
+        : `Bulunamayan kelimeler: ${preview}`,
+    );
+  }
+
+  if (!parts.length) {
+    parts.push("Belirtilen kelimeler bulunamadı.");
+  }
+
+  return { message: parts.join(" "), type };
 }
 
 function ensureAuthenticated(req, res, next) {
@@ -89,6 +207,10 @@ function configurePassport() {
 function renderHome(req, res) {
   res.render("home", {
     commands: COMMAND_CATALOG,
+    premiumFeatures: PREMIUM_FEATURES,
+    premiumEnabled: premiumStore.isEnabled(),
+    defaultLimitLabel: formatWordLimitLabel(premiumStore.getDefaultLimit()),
+    premiumLimitLabel: formatWordLimitLabel(premiumStore.getPremiumLimit()),
     isHome: true,
   });
 }
@@ -98,6 +220,9 @@ function renderDashboard(req, res, client) {
 
   res.render("dashboard", {
     guilds,
+    premiumEnabled: premiumStore.isEnabled(),
+    defaultLimitLabel: formatWordLimitLabel(premiumStore.getDefaultLimit()),
+    premiumLimitLabel: formatWordLimitLabel(premiumStore.getPremiumLimit()),
   });
 }
 
@@ -120,11 +245,27 @@ function renderGuildDashboard(req, res, client, guildId) {
   delete req.session.dashboardMessage;
   delete req.session.dashboardMessageType;
 
+  const premiumStatus = premiumStore.getGuildStatus(guildId);
+  const wordLimit = filterStore.getWordLimit(guildId);
+  const defaultLimit = premiumStore.getDefaultLimit();
+  const premiumLimit = premiumStore.getPremiumLimit();
+  const remainingSlots =
+    wordLimit === Infinity ? null : Math.max(wordLimit - words.length, 0);
+
   res.render("guild", {
     guild,
     words,
     flashMessage,
     flashType,
+    premiumEnabled: premiumStore.isEnabled(),
+    premiumStatus,
+    wordLimit,
+    defaultLimit,
+    premiumLimit,
+    wordLimitLabel: formatWordLimitLabel(wordLimit),
+    defaultLimitLabel: formatWordLimitLabel(defaultLimit),
+    premiumLimitLabel: formatWordLimitLabel(premiumLimit),
+    remainingSlots,
   });
 }
 
@@ -187,45 +328,91 @@ function startDashboard(client) {
       return;
     }
 
-    const word = (req.body.word ?? "").trim();
     const action = req.body.action;
+    const words = normalizeWordInput(req.body.words ?? req.body.word);
 
-    if (!word) {
-      req.session.dashboardMessage = "Lütfen geçerli bir kelime girin.";
+    if (!words.length) {
+      req.session.dashboardMessage = "Lütfen en az bir kelime girin.";
       req.session.dashboardMessageType = "error";
       res.redirect(`/dashboard/${req.params.guildId}`);
       return;
     }
 
     if (action === "add") {
-      const result = filterStore.addWord(guild.id, word);
-      if (result.added) {
-        req.session.dashboardMessage = "Kelime başarıyla eklendi.";
-        req.session.dashboardMessageType = "success";
-      } else {
-        req.session.dashboardMessage =
-          result.reason === "DUPLICATE"
-            ? "Bu kelime zaten kayıtlı."
-            : "Kelime eklenemedi. Lütfen tekrar deneyin.";
-        req.session.dashboardMessageType = "error";
-      }
+      const result = filterStore.addWords(guild.id, words);
+      const summary = summarizeAddResult(guild.id, result);
+      req.session.dashboardMessage = summary.message;
+      req.session.dashboardMessageType = summary.type;
     } else if (action === "remove") {
-      const result = filterStore.removeWord(guild.id, word);
-      if (result.removed) {
-        req.session.dashboardMessage = "Kelime başarıyla kaldırıldı.";
-        req.session.dashboardMessageType = "success";
-      } else {
-        req.session.dashboardMessage =
-          result.reason === "NOT_FOUND"
-            ? "Bu kelime sistemde kayıtlı değil."
-            : "Kelime silinirken bir hata oluştu.";
-        req.session.dashboardMessageType = "error";
-      }
+      const result = filterStore.removeWords(guild.id, words);
+      const summary = summarizeRemoveResult(result);
+      req.session.dashboardMessage = summary.message;
+      req.session.dashboardMessageType = summary.type;
     } else {
       req.session.dashboardMessage = "Geçersiz işlem.";
       req.session.dashboardMessageType = "error";
     }
 
+    res.redirect(`/dashboard/${req.params.guildId}`);
+  });
+
+  app.post("/dashboard/:guildId/premium", ensureAuthenticated, (req, res) => {
+    const guilds = getAdminGuilds(req.user, client);
+    const guild = guilds.find((g) => g.id === req.params.guildId);
+
+    if (!guild) {
+      req.session.dashboardMessage = "Bu sunucuyu yönetme yetkiniz yok.";
+      req.session.dashboardMessageType = "error";
+      res.redirect(`/dashboard/${req.params.guildId}`);
+      return;
+    }
+
+    if (!premiumStore.isEnabled()) {
+      req.session.dashboardMessage = "Premium sistemi şu anda etkin değil.";
+      req.session.dashboardMessageType = "error";
+      res.redirect(`/dashboard/${req.params.guildId}`);
+      return;
+    }
+
+    const licenseKey = (req.body.licenseKey ?? req.body.license ?? "").trim();
+
+    if (!licenseKey) {
+      req.session.dashboardMessage = "Lütfen lisans anahtarını girin.";
+      req.session.dashboardMessageType = "error";
+      res.redirect(`/dashboard/${req.params.guildId}`);
+      return;
+    }
+
+    const result = premiumStore.redeemLicense(guild.id, licenseKey);
+
+    if (!result.success) {
+      let message = "Lisans anahtarı doğrulanamadı.";
+
+      switch (result.reason) {
+        case "INVALID":
+          message = "Lütfen geçerli bir lisans anahtarı girin.";
+          break;
+        case "NOT_FOUND":
+          message = "Bu lisans anahtarı geçerli değil.";
+          break;
+        case "USED":
+          message = "Bu lisans anahtarı başka bir sunucuda kullanılmış.";
+          break;
+        case "MISSING_GUILD":
+          message = "Sunucu bilgisi alınamadı.";
+          break;
+        default:
+          break;
+      }
+
+      req.session.dashboardMessage = message;
+      req.session.dashboardMessageType = "error";
+      res.redirect(`/dashboard/${req.params.guildId}`);
+      return;
+    }
+
+    req.session.dashboardMessage = "Premium lisansı başarıyla etkinleştirildi.";
+    req.session.dashboardMessageType = "success";
     res.redirect(`/dashboard/${req.params.guildId}`);
   });
 

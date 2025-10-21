@@ -170,6 +170,53 @@
           <% } %>
         </section>
 
+        <section class="section" id="premium">
+          <h2>Premium ile daha fazlası</h2>
+          <p class="section-lead">
+            Standart plan <%= defaultLimitLabel %> sınırı sunarken premium ile
+            limitinizi <%= premiumLimitLabel %> seviyesine yükseltebilir ve
+            gelişmiş araçlara erişebilirsiniz.
+          </p>
+          <% if (Array.isArray(premiumFeatures) && premiumFeatures.length) { %>
+            <div class="feature-grid premium-grid">
+              <% premiumFeatures.forEach(function (feature) { %>
+                <article class="feature-card premium-card">
+                  <div class="feature-icon"><%= feature.icon %></div>
+                  <h3><%= feature.title %></h3>
+                  <p><%= feature.description %></p>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+          <% if (premiumEnabled) { %>
+            <div class="premium-banner">
+              <div>
+                <h3>Sunucunuzu dakikalar içinde yükseltin</h3>
+                <p>
+                  Discord dashboard'unda lisans anahtarınızı girerek premium'u
+                  anında etkinleştirebilir ve genişletilmiş kelime kotasının
+                  yanı sıra yeni raporlama araçlarına ulaşabilirsiniz.
+                </p>
+              </div>
+              <% if (isAuthenticated) { %>
+                <a class="button" href="/dashboard">Sunucumu Yükselt</a>
+              <% } else { %>
+                <a class="button" href="/auth/discord">Giriş Yap</a>
+              <% } %>
+            </div>
+          <% } else { %>
+            <div class="premium-banner muted">
+              <div>
+                <h3>Premium çok yakında</h3>
+                <p>
+                  Yeni avantajları duyurmak için bizi takip edin ve güncellemeyi
+                  kaçırmayın.
+                </p>
+              </div>
+            </div>
+          <% } %>
+        </section>
+
         <div class="cta-card">
           <h2>Topluluğunuzu güvende tutmaya hazır mısınız?</h2>
           <p>

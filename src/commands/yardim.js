@@ -15,14 +15,15 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(inviteButton);
 
     const embed = new EmbedBuilder()
-      .setColor("#009eff")
+      .setColor("#5f86ff")
       .setTitle("Chat Filter Yardım Menüsü")
       .setDescription(
         [
-          "**.yardım** veya **/yardim**: Bu menüyü gösterir.",
-          "**.filitre** veya **/filitre**: Filitre menüsünü gösterir.",
-          "**.invite** veya **/invite**: Davet bağlantısını gönderir.",
-          "**.ping** veya **/ping**: Botun gecikme değerini gösterir.",
+          "📘 **.yardım** veya **/yardim** — Bu menüyü gösterir.",
+          "🛡️ **.filtre** veya **/filtre** — Filtre yönetim panelini açar.",
+          "💎 **.premium** veya **/premium** — Premium durumunuzu görüntüler.",
+          "🔗 **.invite** veya **/invite** — Davet bağlantısını paylaşır.",
+          "📶 **.ping** veya **/ping** — Botun gecikme değerini gösterir.",
         ].join("\n"),
       )
       .setFooter({ text: "Beni davet etmek için butona tıklayabilirsiniz." })
