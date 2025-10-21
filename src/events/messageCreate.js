@@ -35,6 +35,18 @@ function enforceFilter(message) {
     return;
   }
 
+  if (filterStore.isChannelExempt(guildId, message.channelId)) {
+    return;
+  }
+
+  const exemptRoles = filterStore.getExemptRoles(guildId);
+  if (exemptRoles.length) {
+    const memberRoles = Array.from(message.member?.roles?.cache?.keys?.() ?? []);
+    if (memberRoles.some((roleId) => filterStore.isRoleExempt(guildId, roleId))) {
+      return;
+    }
+  }
+
   const words = filterStore.getWords(guildId);
   if (!words.length) {
     return;

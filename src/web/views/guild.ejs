@@ -84,6 +84,97 @@
                 </div>
               </form>
             </div>
+            <div class="surface-card manager-card stretch">
+              <div class="card-header">
+                <h2>Muafiyetler</h2>
+                <span class="badge muted">Gerçek zamanlı</span>
+              </div>
+              <p class="card-subtitle">
+                Belirli kanallar veya rolleri filtre kontrolünden muaf tutun.
+                Seçimleri kaydettikten sonra bot tüm yeni iletileri bu ayarlara
+                göre değerlendirir.
+              </p>
+              <div class="exemption-grid">
+                <div class="exemption-column">
+                  <h3>Muaf Kanallar</h3>
+                  <form
+                    method="POST"
+                    action="/dashboard/<%= guild.id %>/exemptions/channels"
+                    class="exemption-form"
+                  >
+                    <label for="channel-select">Filtre dışı kalacak kanallar</label>
+                    <select id="channel-select" name="channels" multiple size="8">
+                      <% channelOptions.forEach(function (channel) { %>
+                        <option
+                          value="<%= channel.id %>"
+                          <%= channel.exempt ? 'selected' : '' %>
+                        >
+                          <%= channel.mentionPrefix %><%= channel.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                    <p class="form-hint">
+                      Tüm kanallarda filtre aktif olsun istiyorsanız seçimleri
+                      temizleyin ve formu gönderin.
+                    </p>
+                    <button class="button" type="submit">Muaf Kanalları Güncelle</button>
+                  </form>
+                  <% if (selectedChannels.length) { %>
+                    <ul class="selection-list">
+                      <% selectedChannels.forEach(function (channel) { %>
+                        <li>
+                          <span><%= channel.mentionPrefix %><%= channel.name %></span>
+                          <% if (channel.missing) { %>
+                            <small>(silinmiş)</small>
+                          <% } %>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } else { %>
+                    <p class="form-hint">Şu anda muaf kanal bulunmuyor.</p>
+                  <% } %>
+                </div>
+                <div class="exemption-column">
+                  <h3>Muaf Roller</h3>
+                  <form
+                    method="POST"
+                    action="/dashboard/<%= guild.id %>/exemptions/roles"
+                    class="exemption-form"
+                  >
+                    <label for="role-select">Filtre dışı kalacak roller</label>
+                    <select id="role-select" name="roles" multiple size="8">
+                      <% roleOptions.forEach(function (role) { %>
+                        <option
+                          value="<%= role.id %>"
+                          <%= role.exempt ? 'selected' : '' %>
+                        >
+                          <%= role.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                    <p class="form-hint">
+                      Moderatör veya yönetici rollerini muaf tutarak güvenilir
+                      ekip üyelerinin daha esnek iletişim kurmasını sağlayın.
+                    </p>
+                    <button class="button" type="submit">Muaf Rolleri Güncelle</button>
+                  </form>
+                  <% if (selectedRoles.length) { %>
+                    <ul class="selection-list">
+                      <% selectedRoles.forEach(function (role) { %>
+                        <li>
+                          <span><%= role.name %></span>
+                          <% if (role.missing) { %>
+                            <small>(silinmiş)</small>
+                          <% } %>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } else { %>
+                    <p class="form-hint">Şu anda muaf rol bulunmuyor.</p>
+                  <% } %>
+                </div>
+              </div>
+            </div>
             <div class="surface-card manager-card stretch premium-card">
               <div class="card-header">
                 <h2>Premium durumu</h2>

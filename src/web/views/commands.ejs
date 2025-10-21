@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Filter · Komutlar</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container page-container">
+        <section class="page-hero">
+          <span class="tag">Komut Kılavuzu</span>
+          <h1>Tüm komutlar ve kullanım senaryoları tek yerde.</h1>
+          <p>
+            Chat Filter, mesaj ve slash komutları arasında tam uyum sağlar. Aşağıdaki
+            tabloyu ve şematik rehberleri kullanarak moderasyon akışınızı planlayın.
+          </p>
+        </section>
+
+        <% if (Array.isArray(commands) && commands.length) { %>
+          <section class="command-catalog">
+            <table class="command-table detailed">
+              <thead>
+                <tr>
+                  <th>Komut</th>
+                  <th>Tür</th>
+                  <th>Kullanım</th>
+                  <th>Açıklama</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% commands.forEach(function (command) { %>
+                  <tr>
+                    <td><strong><%= command.name %></strong></td>
+                    <td><%= command.type %></td>
+                    <td><code><%= command.usage %></code></td>
+                    <td><%= command.description %></td>
+                  </tr>
+                  <% if (Array.isArray(command.notes) && command.notes.length) { %>
+                    <tr class="command-notes">
+                      <td colspan="4">
+                        <ul>
+                          <% command.notes.forEach(function (note) { %>
+                            <li><%= note %></li>
+                          <% }) %>
+                        </ul>
+                      </td>
+                    </tr>
+                  <% } %>
+                <% }) %>
+              </tbody>
+            </table>
+          </section>
+        <% } %>
+
+        <% if (Array.isArray(workflows) && workflows.length) { %>
+          <section class="workflow-section">
+            <h2>Ayrıntılı kullanım akışları</h2>
+            <p class="section-lead">
+              Komutları uygularken takip edebileceğiniz sıralı adımlar. Ekip
+              içi eğitimler ve dokümantasyon için idealdir.
+            </p>
+            <div class="workflow-grid">
+              <% workflows.forEach(function (flow) { %>
+                <article class="workflow-card">
+                  <h3><%= flow.title %></h3>
+                  <ol>
+                    <% if (Array.isArray(flow.steps)) { %>
+                      <% flow.steps.forEach(function (step) { %>
+                        <li>
+                          <h4><%= step.title %></h4>
+                          <p><%= step.description %></p>
+                        </li>
+                      <% }) %>
+                    <% } %>
+                  </ol>
+                </article>
+              <% }) %>
+            </div>
+          </section>
+        <% } %>
+
+        <section class="cta-panel">
+          <div>
+            <h2>Premium ile kapasitenizi genişletin</h2>
+            <p>
+              Standart plan <%= defaultLimitLabel %> sunarken premium ile kotanız
+              <%= premiumLimitLabel %> seviyesine yükselir. Dashboard veya !premium
+              komutu üzerinden lisans anahtarınızı kullanabilirsiniz.
+            </p>
+          </div>
+          <% if (inviteUrl) { %>
+            <a class="button" href="<%= inviteUrl %>" target="_blank" rel="noopener">
+              Botu Davet Et
+            </a>
+          <% } else { %>
+            <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
+          <% } %>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>

@@ -9,173 +9,104 @@
   <body>
     <%- include('partials/navbar', { isHome: true }) %>
     <main>
-      <div class="container">
+      <div class="container page-container">
         <section class="hero-section" id="hero">
           <div class="hero-content">
             <span class="tag">Discord Moderasyon Asistanı</span>
-            <h1>Profesyonel filtre yönetimiyle topluluğunuzu koruyun.</h1>
+            <h1>İnce ve naif bir tasarım ile topluluğunuzu koruyun.</h1>
             <p>
-              Chat Filter, Discord sunucularınızı uygunsuz içerikten koruyarak
-              yönetici ekibinizin yükünü hafifletir. Kapsamlı filtre kontrolleri,
-              güvenli OAuth girişleri ve modern bir yönetim paneli tek yerde.
+              Chat Filter, mesaj denetimini muafiyet katmanlarıyla destekler ve
+              modern dashboard deneyimiyle filtre yönetimini kolaylaştırır.
             </p>
             <div class="hero-actions">
               <% if (isAuthenticated) { %>
                 <a class="button" href="/dashboard">Sunucularımı Yönet</a>
-                <a class="button secondary" href="#features">Özellikleri Keşfet</a>
               <% } else { %>
                 <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
-                <a class="button secondary" href="#features">Özellikleri Keşfet</a>
               <% } %>
-            </div>
-            <div class="hero-stats">
-              <div class="stat-card">
-                <strong>50+</strong>
-                <span>Aktif topluluk tarafından kullanılıyor</span>
-              </div>
-              <div class="stat-card">
-                <strong>10K+</strong>
-                <span>Filtrelenen mesaj</span>
-              </div>
-              <div class="stat-card">
-                <strong>7/24</strong>
-                <span>Otomatik izleme ve kayıt</span>
-              </div>
+              <a class="button secondary" href="/ozellikler">Özellikleri İncele</a>
             </div>
           </div>
-          <div class="hero-card">
-            <h2>Gerçek zamanlı güvenlik kontrolü</h2>
-            <p class="section-lead">
-              Anında filtre güncellemeleri, ayrıntılı kayıtlar ve
-              yöneticilerinizin ihtiyaç duyduğu tüm veriler modern bir panelde.
-            </p>
+          <div class="hero-glass">
+            <h2>Yeni neler var?</h2>
             <ul>
-              <li>• Yönetici izinleriyle güvenli Discord OAuth girişleri</li>
-              <li>• Slash komutları ile panelden bağımsız hızlı kullanım</li>
-              <li>• Toplu kelime yönetimi ve ayrıntılı kayıtlar</li>
+              <li>🛡️ Rol bazlı ve kanal bazlı muafiyet yönetimi</li>
+              <li>🎛️ İnce ayarlı dashboard kartları ve profil alanı</li>
+              <li>💎 Premium lisans akışı ve gelişmiş durum kartları</li>
             </ul>
           </div>
         </section>
 
-        <section class="section" id="features">
-          <h2>Güvenli moderasyon için tasarlandı</h2>
-          <p class="section-lead">
-            Modern arayüz, etkileşimli bot komutları ve ayrıntılı filtre ayarları
-            ile sunucunuzu dakikalar içinde güvenli hâle getirin.
-          </p>
-          <div class="feature-grid">
-            <article class="feature-card">
-              <div class="feature-icon">🛡️</div>
-              <h3>Akıllı filtreleme</h3>
-              <p>
-                Kelime listelerinizi anında güncelleyin, otomatik temizleme ve
-                kayıt özellikleriyle uygunsuz içerikleri engelleyin.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon">⚡</div>
-              <h3>Komut &amp; Slash uyumu</h3>
-              <p>
-                Prefix veya slash komutlarını eşzamanlı kullanın; aynı iş akışı
-                tüm moderasyon ekibiniz için erişilebilir.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon">📊</div>
-              <h3>Gelişmiş panel</h3>
-              <p>
-                Sezgisel dashboard ile sunucularınızı karşılaştırın, kelime
-                listelerinizi yönetin ve sonuçları gerçek zamanlı görün.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon">🔒</div>
-              <h3>Yetki kontrollü erişim</h3>
-              <p>
-                Yalnızca yönetici yetkisine sahip kullanıcılar giriş yapabilir;
-                sunucularınız güvende kalır.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="section" id="dashboard">
-          <h2>Profesyonel dashboard deneyimi</h2>
-          <p class="section-lead">
-            Yönetim paneli, filtrelerinizi görsel olarak organize eder ve ekip
-            arkadaşlarınızın işini kolaylaştırır.
-          </p>
-          <div class="preview-layout">
-            <div class="surface-card">
-              <h3>Sunucularınızı tek bakışta yönetin</h3>
-              <p>
-                Yönetici olduğunuz tüm sunucuları tek sayfada listeler, tek
-                tıkla filtre ayarlarına ulaşmanızı sağlar. Tüm verileriniz güvenle
-                saklanır ve hızlıca güncellenir.
-              </p>
-              <ul>
-                <li>Sunucu bazlı kelime listeleri</li>
-                <li>Eklemek veya kaldırmak için sezgisel formlar</li>
-                <li>Başarılı ve hatalı işlemler için canlı bildirimler</li>
-              </ul>
+        <% if (Array.isArray(featureSpotlights) && featureSpotlights.length) { %>
+          <section class="spotlight-section" id="features">
+            <h2>Öne çıkan yetenekler</h2>
+            <p class="section-lead">
+              Filtre çekirdeği, muafiyet katmanı ve dashboard deneyimi tek bir
+              ekosistem içinde birleşir.
+            </p>
+            <div class="spotlight-rail">
+              <% featureSpotlights.forEach(function (feature) { %>
+                <article class="spotlight-card">
+                  <div class="spotlight-icon"><%= feature.icon %></div>
+                  <h3><%= feature.title %></h3>
+                  <p><%= feature.description %></p>
+                </article>
+              <% }) %>
             </div>
+            <a class="inline-link" href="/ozellikler">Tüm özellikleri incele →</a>
+          </section>
+        <% } %>
+
+        <% if (Array.isArray(schematics) && schematics.length) { %>
+          <section class="schematic-preview" id="dashboard">
+            <h2>Filtreleme akışı nasıl çalışır?</h2>
             <div class="preview-card">
               <div>
-                <h4>Kelime yönetim akışı</h4>
-                <ul>
-                  <li>Kayıtlı kelimeleri çip kartlarıyla görüntüleyin</li>
-                  <li>Tek adımda ekleyin veya kaldırın</li>
-                  <li>Bot ve panel arasında kusursuz senkron</li>
-                </ul>
+                <h4><%= schematics[0].title %></h4>
+                <p><%= schematics[0].lead %></p>
               </div>
-              <div>
-                <h4>Rol tabanlı erişim</h4>
-                <ul>
-                  <li>Discord OAuth ile kimlik doğrulama</li>
-                  <li>Yalnızca yönetici yetkisine sahip sunucular</li>
-                  <li>Çoklu sunucu desteği</li>
-                </ul>
+              <div class="step-list">
+                <% schematics[0].steps.slice(0, 3).forEach(function (step) { %>
+                  <div class="step-item">
+                    <span><%= step.label %></span>
+                    <p><strong><%= step.title %>:</strong> <%= step.description %></p>
+                  </div>
+                <% }) %>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        <% } %>
 
-        <section class="section" id="commands">
-          <h2>Komut kataloğu</h2>
-          <p class="section-lead">
-            Botu ister klasik mesaj komutları, ister slash komutlarıyla
-            kullanarak moderasyon iş akışınızı hızlandırın.
-          </p>
-          <% if (Array.isArray(commands) && commands.length) { %>
-            <div class="command-table-wrapper">
-              <table class="command-table">
-                <thead>
+        <% if (Array.isArray(commandHighlights) && commandHighlights.length) { %>
+          <section class="command-preview" id="commands">
+            <h2>Komut kataloğuna hızlı bakış</h2>
+            <table class="command-table compact">
+              <thead>
+                <tr>
+                  <th>Komut</th>
+                  <th>Tür</th>
+                  <th>Açıklama</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% commandHighlights.forEach(function (command) { %>
                   <tr>
-                    <th>Komut</th>
-                    <th>Tür</th>
-                    <th>Açıklama</th>
+                    <td><strong><%= command.name %></strong></td>
+                    <td><%= command.type %></td>
+                    <td><%= command.description %></td>
                   </tr>
-                </thead>
-                <tbody>
-                  <% commands.forEach(function (command) { %>
-                    <tr>
-                      <td><strong><%= command.name %></strong></td>
-                      <td><%= command.type %></td>
-                      <td><%= command.description %></td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          <% } %>
-        </section>
+                <% }) %>
+              </tbody>
+            </table>
+            <a class="inline-link" href="/komutlar">Tüm komutları gör →</a>
+          </section>
+        <% } %>
 
         <section class="section" id="premium">
           <h2>Premium ile daha fazlası</h2>
           <p class="section-lead">
             Standart plan <%= defaultLimitLabel %> sınırı sunarken premium ile
-            limitinizi <%= premiumLimitLabel %> seviyesine yükseltebilir ve
-            gelişmiş araçlara erişebilirsiniz.
+            limitinizi <%= premiumLimitLabel %> seviyesine yükseltebilirsiniz.
           </p>
           <% if (Array.isArray(premiumFeatures) && premiumFeatures.length) { %>
             <div class="feature-grid premium-grid">
@@ -189,13 +120,12 @@
             </div>
           <% } %>
           <% if (premiumEnabled) { %>
-            <div class="premium-banner">
+            <div class="premium-banner refined">
               <div>
-                <h3>Sunucunuzu dakikalar içinde yükseltin</h3>
+                <h3>Premium anahtarınızı kullanın</h3>
                 <p>
-                  Discord dashboard'unda lisans anahtarınızı girerek premium'u
-                  anında etkinleştirebilir ve genişletilmiş kelime kotasının
-                  yanı sıra yeni raporlama araçlarına ulaşabilirsiniz.
+                  Dashboard'dan lisans kodunu girerek veya !premium komutu ile
+                  aktif ederek filtre kapasitenizi hemen artırın.
                 </p>
               </div>
               <% if (isAuthenticated) { %>
@@ -217,7 +147,7 @@
           <% } %>
         </section>
 
-        <div class="cta-card">
+        <section class="cta-card">
           <h2>Topluluğunuzu güvende tutmaya hazır mısınız?</h2>
           <p>
             Chat Filter, moderasyon ekibinizin yükünü azaltmak için tasarlandı.
@@ -229,7 +159,7 @@
           <% } else { %>
             <a class="button" href="/auth/discord">Discord ile Başlayın</a>
           <% } %>
-        </div>
+        </section>
       </div>
     </main>
     <%- include('partials/footer', { isHome: true }) %>

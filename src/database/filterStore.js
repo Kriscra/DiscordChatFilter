@@ -5,6 +5,22 @@ const DATABASE_NAME = "filtered_words";
 const DATABASE_FOLDER = "database";
 const KEY_PREFIX = "filter_words:";
 
+function normalizeSnowflake(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeSnowflakeList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  const normalized = values
+    .map((value) => normalizeSnowflake(value))
+    .filter((value) => value.length > 0);
+
+  return Array.from(new Set(normalized));
+}
+
 function normalizeWord(word) {
   return typeof word === "string" ? word.trim() : "";
 }
@@ -36,19 +52,60 @@ class FilterStore {
     return `${KEY_PREFIX}${guildId}`;
   }
 
-  getWords(guildId) {
+  getSettings(guildId) {
     if (!guildId) {
-      return [];
+      return {
+        words: [],
+        exemptChannels: [],
+        exemptRoles: [],
+      };
     }
 
     const stored = this.db.get(this.getKey(guildId));
-    if (!Array.isArray(stored)) {
-      return [];
+
+    if (!stored) {
+      return {
+        words: [],
+        exemptChannels: [],
+        exemptRoles: [],
+      };
     }
 
-    return stored
-      .map((word) => (typeof word === "string" ? word.trim() : ""))
-      .filter((word) => word.length > 0);
+    if (Array.isArray(stored)) {
+      return {
+        words: stored
+          .map((word) => (typeof word === "string" ? word.trim() : ""))
+          .filter((word) => word.length > 0),
+        exemptChannels: [],
+        exemptRoles: [],
+      };
+    }
+
+    const words = normalizeWordList(stored.words ?? stored.wordList ?? []);
+    const exemptChannels = normalizeSnowflakeList(
+      stored.exemptChannels ?? [],
+    );
+    const exemptRoles = normalizeSnowflakeList(stored.exemptRoles ?? []);
+
+    return { words, exemptChannels, exemptRoles };
+  }
+
+  saveSettings(guildId, settings) {
+    if (!guildId) {
+      return;
+    }
+
+    const payload = {
+      words: normalizeWordList(settings.words ?? []),
+      exemptChannels: normalizeSnowflakeList(settings.exemptChannels ?? []),
+      exemptRoles: normalizeSnowflakeList(settings.exemptRoles ?? []),
+    };
+
+    this.db.set(this.getKey(guildId), payload);
+  }
+
+  getWords(guildId) {
+    return this.getSettings(guildId).words;
   }
 
   hasWord(guildId, word) {
@@ -60,6 +117,64 @@ class FilterStore {
     return this.getWords(guildId).some(
       (storedWord) => storedWord.toLowerCase() === normalized,
     );
+  }
+
+  getExemptChannels(guildId) {
+    return this.getSettings(guildId).exemptChannels;
+  }
+
+  setExemptChannels(guildId, channelIds) {
+    if (!guildId) {
+      return { updated: false, channels: [] };
+    }
+
+    const settings = this.getSettings(guildId);
+    const normalized = normalizeSnowflakeList(channelIds);
+
+    this.saveSettings(guildId, {
+      ...settings,
+      exemptChannels: normalized,
+    });
+
+    return { updated: true, channels: normalized };
+  }
+
+  getExemptRoles(guildId) {
+    return this.getSettings(guildId).exemptRoles;
+  }
+
+  setExemptRoles(guildId, roleIds) {
+    if (!guildId) {
+      return { updated: false, roles: [] };
+    }
+
+    const settings = this.getSettings(guildId);
+    const normalized = normalizeSnowflakeList(roleIds);
+
+    this.saveSettings(guildId, {
+      ...settings,
+      exemptRoles: normalized,
+    });
+
+    return { updated: true, roles: normalized };
+  }
+
+  isChannelExempt(guildId, channelId) {
+    if (!guildId || !channelId) {
+      return false;
+    }
+
+    const channels = this.getExemptChannels(guildId);
+    return channels.includes(channelId);
+  }
+
+  isRoleExempt(guildId, roleId) {
+    if (!guildId || !roleId) {
+      return false;
+    }
+
+    const roles = this.getExemptRoles(guildId);
+    return roles.includes(roleId);
   }
 
   getWordLimit(guildId) {
@@ -76,7 +191,8 @@ class FilterStore {
       return { added: [], duplicates: [], limitReached: false, reason: "EMPTY" };
     }
 
-    const existing = this.getWords(guildId);
+    const settings = this.getSettings(guildId);
+    const existing = settings.words;
     const existingLower = new Set(existing.map((word) => word.toLowerCase()));
     const duplicates = normalizedList.filter((word) =>
       existingLower.has(word.toLowerCase()),
@@ -98,7 +214,10 @@ class FilterStore {
 
     if (canAdd.length) {
       const updated = existing.concat(canAdd);
-      this.db.set(this.getKey(guildId), updated);
+      this.saveSettings(guildId, {
+        ...settings,
+        words: updated,
+      });
       added.push(...canAdd);
     }
 
@@ -135,7 +254,8 @@ class FilterStore {
       return { removed: [], notFound: [], reason: "EMPTY" };
     }
 
-    const existing = this.getWords(guildId);
+    const settings = this.getSettings(guildId);
+    const existing = settings.words;
     if (!existing.length) {
       return { removed: [], notFound: normalizedList };
     }
@@ -161,7 +281,10 @@ class FilterStore {
       (storedWord) => !removedLower.has(storedWord.toLowerCase()),
     );
 
-    this.db.set(this.getKey(guildId), filtered);
+    this.saveSettings(guildId, {
+      ...settings,
+      words: filtered,
+    });
 
     return { removed, notFound };
   }

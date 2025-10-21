@@ -16,22 +16,35 @@
       </a>
       <div class="nav-menu">
         <div class="nav-links nav-primary">
-          <a href="<%= isHome ? '#features' : '/#features' %>">Özellikler</a>
-          <a href="<%= isHome ? '#dashboard' : '/#dashboard' %>">Dashboard</a>
-          <a href="<%= isHome ? '#commands' : '/#commands' %>">Komutlar</a>
+          <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/">Anasayfa</a>
+          <a class="<%= currentPath === '/ozellikler' ? 'active' : '' %>" href="/ozellikler">Özellikler</a>
+          <a class="<%= currentPath === '/komutlar' ? 'active' : '' %>" href="/komutlar">Komutlar</a>
+          <a
+            class="<%= currentPath && currentPath.startsWith('/dashboard') ? 'active' : '' %>"
+            href="/dashboard"
+          >Dashboard</a>
           <a href="<%= isHome ? '#premium' : '/#premium' %>">Premium</a>
-          <% if (isAuthenticated) { %>
-            <a href="/dashboard">Sunucular</a>
+        </div>
+        <div class="nav-links nav-secondary">
+          <% if (inviteUrl) { %>
+            <a class="button ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">Sunucuna Ekle</a>
+          <% } %>
+          <% if (profile) { %>
+            <div class="profile-chip">
+              <img src="<%= profile.avatarUrl %>" alt="Profil" />
+              <div class="profile-meta">
+                <span class="profile-name"><%= profile.tag %></span>
+                <div class="profile-actions">
+                  <a href="/dashboard">Sunucularım</a>
+                  <span>·</span>
+                  <a href="/logout">Çıkış Yap</a>
+                </div>
+              </div>
+            </div>
+          <% } else { %>
+            <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
           <% } %>
         </div>
-        <% if (isAuthenticated && user) { %>
-          <div class="nav-user">
-            <span><%= user.username %>#<%= user.discriminator %></span>
-            <a class="button secondary" href="/logout">Çıkış Yap</a>
-          </div>
-        <% } else { %>
-          <a class="button" href="/auth/discord">Discord ile Giriş Yap</a>
-        <% } %>
       </div>
     </nav>
   </div>

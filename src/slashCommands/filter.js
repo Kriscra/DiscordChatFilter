@@ -13,6 +13,8 @@ const FILTER_MENU_EMOJI_LIST = "📋";
 const BUTTON_ADD = "filter:add";
 const BUTTON_REMOVE = "filter:remove";
 const BUTTON_LIST = "filter:list";
+const BUTTON_CHANNELS = "filter:channels";
+const BUTTON_ROLES = "filter:roles";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -37,10 +39,27 @@ module.exports = {
       .setEmoji(FILTER_MENU_EMOJI_LIST)
       .setStyle(ButtonStyle.Secondary);
 
-    const row = new ActionRowBuilder().addComponents(
+    const channelButton = new ButtonBuilder()
+      .setCustomId(BUTTON_CHANNELS)
+      .setLabel("Muaf Kanallar")
+      .setEmoji("#️⃣")
+      .setStyle(ButtonStyle.Primary);
+
+    const roleButton = new ButtonBuilder()
+      .setCustomId(BUTTON_ROLES)
+      .setLabel("Muaf Roller")
+      .setEmoji("🛡️")
+      .setStyle(ButtonStyle.Primary);
+
+    const rowPrimary = new ActionRowBuilder().addComponents(
       addButton,
       removeButton,
       listButton,
+    );
+
+    const rowSecondary = new ActionRowBuilder().addComponents(
+      channelButton,
+      roleButton,
     );
 
     const embed = new EmbedBuilder()
@@ -51,6 +70,8 @@ module.exports = {
           `${FILTER_MENU_EMOJI_ADD} Birden fazla kelimeyi aynı anda eklemek için butona tıklayın.`,
           `${FILTER_MENU_EMOJI_REMOVE} Kayıtlı kelimeleri listeden seçerek saniyeler içinde silin.`,
           `${FILTER_MENU_EMOJI_LIST} Güncel filtre listenizi gizliden görüntüleyin.`,
+          "#️⃣ Filtreyi devre dışı bırakmak istediğiniz kanalları yönetin.",
+          "🛡️ Yetkili roller için otomatik muafiyet belirleyin.",
         ].join("\n"),
       )
       .setFooter({
@@ -58,6 +79,9 @@ module.exports = {
       })
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], components: [row] });
+    await interaction.reply({
+      embeds: [embed],
+      components: [rowPrimary, rowSecondary],
+    });
   },
 };

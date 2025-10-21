@@ -1,9 +1,12 @@
 const {
   ActionRowBuilder,
+  ChannelSelectMenuBuilder,
+  ChannelType,
   EmbedBuilder,
   Events,
   ModalBuilder,
   PermissionsBitField,
+  RoleSelectMenuBuilder,
   StringSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -20,9 +23,13 @@ const {
 const BUTTON_ADD = "filter:add";
 const BUTTON_REMOVE = "filter:remove";
 const BUTTON_LIST = "filter:list";
+const BUTTON_CHANNELS = "filter:channels";
+const BUTTON_ROLES = "filter:roles";
 const MODAL_ADD_ID = "filter:add:modal";
 const INPUT_ADD_ID = "filter_add_words";
 const SELECT_REMOVE_ID = "filter:remove:select";
+const SELECT_CHANNELS_ID = "filter:channels:select";
+const SELECT_ROLES_ID = "filter:roles:select";
 const MODAL_PREMIUM_ID = "premium:modal";
 const INPUT_PREMIUM_KEY = "premium_key";
 
@@ -106,6 +113,64 @@ function showRemoveMenu(interaction) {
 
   return interaction.reply({
     content,
+    components: [new ActionRowBuilder().addComponents(menu)],
+    ephemeral: true,
+  });
+}
+
+function showChannelExemptMenu(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  const exemptChannels = filterStore.getExemptChannels(interaction.guildId);
+
+  const menu = new ChannelSelectMenuBuilder()
+    .setCustomId(SELECT_CHANNELS_ID)
+    .setPlaceholder("Muaf tutmak istediğiniz kanalları seçin")
+    .setMinValues(0)
+    .setMaxValues(25)
+    .addChannelTypes(
+      ChannelType.GuildText,
+      ChannelType.GuildAnnouncement,
+      ChannelType.GuildVoice,
+      ChannelType.GuildStageVoice,
+      ChannelType.GuildForum,
+      ChannelType.GuildCategory,
+    );
+
+  if (exemptChannels.length) {
+    menu.setDefaultChannels(...exemptChannels.slice(0, 25));
+  }
+
+  return interaction.reply({
+    content:
+      "#️⃣ Filtre sisteminden muaf tutulacak kanalları seçin. Seçimi temizlemek için hiçbir kanal seçmeden gönderin.",
+    components: [new ActionRowBuilder().addComponents(menu)],
+    ephemeral: true,
+  });
+}
+
+function showRoleExemptMenu(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  const exemptRoles = filterStore.getExemptRoles(interaction.guildId);
+
+  const menu = new RoleSelectMenuBuilder()
+    .setCustomId(SELECT_ROLES_ID)
+    .setPlaceholder("Muaf rollerini seçin")
+    .setMinValues(0)
+    .setMaxValues(25);
+
+  if (exemptRoles.length) {
+    menu.setDefaultRoles(...exemptRoles.slice(0, 25));
+  }
+
+  return interaction.reply({
+    content:
+      "🛡️ Filtre denetiminden muaf olacak rolleri seçin. Temizlemek için tüm seçimleri kaldırın.",
     components: [new ActionRowBuilder().addComponents(menu)],
     ephemeral: true,
   });
@@ -273,6 +338,48 @@ async function handleRemoveSelect(interaction) {
   });
 }
 
+async function handleChannelSelect(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  const selections = Array.isArray(interaction.values)
+    ? interaction.values
+    : [];
+
+  const result = filterStore.setExemptChannels(interaction.guildId, selections);
+
+  const message = result.channels.length
+    ? `#️⃣ ${result.channels.length} kanal filtre kontrolünden muaf.`
+    : "#️⃣ Muaf kanal bulunmuyor. Tüm kanallar filtreleniyor.";
+
+  await interaction.update({
+    content: message,
+    components: [],
+  });
+}
+
+async function handleRoleSelect(interaction) {
+  if (!ensureAdministrator(interaction)) {
+    return;
+  }
+
+  const selections = Array.isArray(interaction.values)
+    ? interaction.values
+    : [];
+
+  const result = filterStore.setExemptRoles(interaction.guildId, selections);
+
+  const message = result.roles.length
+    ? `🛡️ ${result.roles.length} rol filtre kontrolünden muaf.`
+    : "🛡️ Muaf rol bulunmuyor. Tüm roller filtreye tabi.";
+
+  await interaction.update({
+    content: message,
+    components: [],
+  });
+}
+
 async function showPremiumRedeemModal(interaction) {
   if (!ensureAdministrator(interaction)) {
     return;
@@ -423,6 +530,16 @@ module.exports = {
         return;
       }
 
+      if (interaction.customId === BUTTON_CHANNELS) {
+        await showChannelExemptMenu(interaction);
+        return;
+      }
+
+      if (interaction.customId === BUTTON_ROLES) {
+        await showRoleExemptMenu(interaction);
+        return;
+      }
+
       if (interaction.customId === BUTTON_REDEEM) {
         await showPremiumRedeemModal(interaction);
       }
@@ -433,6 +550,22 @@ module.exports = {
     if (interaction.isStringSelectMenu()) {
       if (interaction.customId === SELECT_REMOVE_ID) {
         await handleRemoveSelect(interaction);
+      }
+
+      return;
+    }
+
+    if (interaction.isChannelSelectMenu()) {
+      if (interaction.customId === SELECT_CHANNELS_ID) {
+        await handleChannelSelect(interaction);
+      }
+
+      return;
+    }
+
+    if (interaction.isRoleSelectMenu()) {
+      if (interaction.customId === SELECT_ROLES_ID) {
+        await handleRoleSelect(interaction);
       }
 
       return;

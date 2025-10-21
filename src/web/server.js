@@ -3,6 +3,7 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const { Strategy: DiscordStrategy } = require("passport-discord");
+const { ChannelType } = require("discord.js");
 const config = require("../config");
 const filterStore = require("../database/filterStore");
 const premiumStore = require("../database/premiumStore");
@@ -12,39 +13,117 @@ const { normalizeWordInput } = require("../utils/text");
 const ADMINISTRATOR_PERMISSION = BigInt(0x00000008);
 let isStarted = false;
 
-const COMMAND_CATALOG = [
+const FEATURE_SPOTLIGHTS = [
   {
-    name: "!filtre /filtre",
-    type: "Mesaj & Slash",
+    icon: "🛡️",
+    title: "Dinamik filtre çekirdeği",
     description:
-      "Toplu kelime ekleme, hızlı silme menüsü ve filtre listesine erişim sağlar.",
+      "Kelime listelerinizi tek panelden yönetin, bot ve dashboard arasında saniyeler içinde eşitleyin.",
+    bullets: [
+      "Toplu kelime ekleme ve temizleme işlemleri",
+      "Otomatik kural eşleştirme ve ihlal silme",
+      "Premium limitlerle genişleyen kapasite",
+    ],
   },
   {
-    name: "!yardım /yardım",
-    type: "Mesaj & Slash",
-    description: "Botun kullanım rehberini ve tüm komutların özetini gösterir.",
-  },
-  {
-    name: "!ping /ping",
-    type: "Mesaj & Slash",
-    description: "Botun gecikme süresini ölçerek çevrim içi durumunu doğrular.",
-  },
-  {
-    name: "!invite /invite",
-    type: "Mesaj & Slash",
-    description: "Sunucunuza botu eklemek için davet bağlantısı oluşturur.",
-  },
-  {
-    name: "!premium /premium",
-    type: "Mesaj & Slash",
+    icon: "#️⃣",
+    title: "Muafiyet katmanı",
     description:
-      "Premium durumunu görüntüler ve lisans anahtarı kullanarak planınızı yükseltmenizi sağlar.",
+      "Belirli kanallar ve rolleri filtrelemeyi atlayarak ekip sohbetlerini özgür bırakın.",
+    bullets: [
+      "Kanal bazlı filtre kapatma",
+      "Rol tabanlı yetkili muafiyetleri",
+      "Tek tıkla yönetim ve gerçek zamanlı kayıt",
+    ],
   },
   {
-    name: "!premiumolustur /premiumkod",
-    type: "Mesaj & Slash",
+    icon: "🗂️",
+    title: "Profesyonel dashboard",
     description:
-      "Bot sahiplerinin süreli premium lisans anahtarları oluşturmasına olanak tanır.",
+      "Modern ve erişilebilir arayüz ile tüm sunucu yapılandırmalarınızı tek yerde toplayın.",
+    bullets: [
+      "OAuth2 tabanlı güvenli giriş",
+      "Şeffaf premium durum kartları",
+      "Detaylı kullanım rehberleri ve komut katalogları",
+    ],
+  },
+];
+
+const FEATURE_SCHEMATICS = [
+  {
+    title: "Filtreleme akış şeması",
+    lead:
+      "Bir mesaj gönderildiğinde Chat Filter üç aşamalı kontrol uygular ve sonuçları anında yansıtır.",
+    steps: [
+      {
+        label: "1",
+        title: "Giriş tespiti",
+        description:
+          "Mesaj içeriği, gönderildiği kanal ve kullanıcının rolleri gerçek zamanlı olarak okunur.",
+      },
+      {
+        label: "2",
+        title: "Muafiyet katmanı",
+        description:
+          "Kanal veya role özel muafiyet listeleri değerlendirilir; kayıtlı eşleşmeler varsa filtreleme atlanır.",
+      },
+      {
+        label: "3",
+        title: "Kelime eşleştirme",
+        description:
+          "Normalleştirilmiş kelime listesi ile içerik karşılaştırılır; eşleşme varsa mesaj güvenli şekilde kaldırılır.",
+      },
+    ],
+  },
+  {
+    title: "Dashboard veri akışı",
+    lead:
+      "Panelde yaptığınız her değişiklik kalıcı depoya yazılır ve bot ile anında senkron edilir.",
+    steps: [
+      {
+        label: "A",
+        title: "Yetki denetimi",
+        description:
+          "Discord OAuth oturumu doğrulanır, yalnızca yönetici yetkisine sahip sunucular listelenir.",
+      },
+      {
+        label: "B",
+        title: "Form gönderimi",
+        description:
+          "Kelime, kanal veya rol formları gönderildiğinde girdiler temizlenir ve güvenli sınırlara çekilir.",
+      },
+      {
+        label: "C",
+        title: "Kalıcı kayıt",
+        description:
+          "Güncel yapılandırma RacheDB üzerine yazılır, bot olay dinleyicileri yeni ayarları anında kullanır.",
+      },
+    ],
+  },
+  {
+    title: "Premium lisans süreci",
+    lead:
+      "Premium anahtar oluşturma ve kullanım akışı takip edilerek süre sonlarına kadar koruma sağlanır.",
+    steps: [
+      {
+        label: "I",
+        title: "Lisans üretimi",
+        description:
+          "Sahip komutları süreli anahtarlar üretir, geçerlilik ve kullanım limitleri meta veriye kaydedilir.",
+      },
+      {
+        label: "II",
+        title: "Aktivasyon",
+        description:
+          "Anahtar panel veya komut ile kullanıldığında sunucunun kotası yükseltilir ve zamanlayıcı başlatılır.",
+      },
+      {
+        label: "III",
+        title: "Gözetim",
+        description:
+          "Süre bitimine kadar kalan günler takip edilir, sona erdiğinde plan otomatik olarak standart seviyeye iner.",
+      },
+    ],
   },
 ];
 
@@ -66,6 +145,119 @@ const PREMIUM_FEATURES = [
     title: "Özel tema seçenekleri",
     description:
       "Dashboard üzerinde premium temaları ve özelleştirilmiş görünümü etkinleştirin.",
+  },
+];
+
+const COMMAND_DETAILS = [
+  {
+    name: "!filtre /filtre",
+    type: "Mesaj & Slash",
+    usage: "!filtre",
+    description:
+      "Kelime listesini, muaf kanalları ve muaf rolleri yönetmek için etkileşimli menü açar.",
+    notes: [
+      "Toplu kelime ekleme & silme modalları",
+      "#️⃣ kanal ve 🛡️ rol muafiyet seçimleri",
+      "Güncel listeyi gizli olarak görüntüleme",
+    ],
+  },
+  {
+    name: "!yardım /yardım",
+    type: "Mesaj & Slash",
+    usage: "!yardım",
+    description:
+      "Tüm komutların açıklamalarını, kullanım örneklerini ve destek bağlantılarını listeler.",
+    notes: [
+      "Slash ve mesaj komutlarının ayrıntılı dökümü",
+      "Premium avantajları hakkında kısa özet",
+    ],
+  },
+  {
+    name: "!premium /premium",
+    type: "Mesaj & Slash",
+    usage: "!premium",
+    description:
+      "Sunucunun premium durumunu, lisans geçerlilik tarihlerini ve kalan gün sayısını gösterir.",
+    notes: [
+      "Aktif lisans bilgisi ve statü rozetleri",
+      "Geçersiz anahtarlar için yönlendirici uyarılar",
+    ],
+  },
+  {
+    name: "!premiumolustur /premiumkod",
+    type: "Mesaj & Slash",
+    usage: "!premiumolustur 30d",
+    description:
+      "Bot sahiplerinin belirli gün sayısı kadar geçerli premium anahtar üretmesine izin verir.",
+    notes: [
+      "Otomatik süre hesaplama ve tek kullanımlık anahtarlar",
+      "Aktarım geçmişi ve kullanım denetimi",
+    ],
+  },
+  {
+    name: "!ping /ping",
+    type: "Mesaj & Slash",
+    usage: "!ping",
+    description:
+      "Botun gecikme süresini ölçerek API durumunu ve dashboard senkronizasyonunu doğrular.",
+    notes: ["API ping, websocket gecikmesi ve hazır olma kontrolleri"],
+  },
+  {
+    name: "!invite /invite",
+    type: "Mesaj & Slash",
+    usage: "!invite",
+    description:
+      "Botu yeni bir sunucuya eklemek için davet bağlantısı sağlar ve gerekli izinleri açıklar.",
+    notes: ["OAuth yetkilendirme bağlantısı", "Önerilen izinler listesi"],
+  },
+];
+
+const COMMAND_CATALOG = COMMAND_DETAILS.map(({ name, type, description }) => ({
+  name,
+  type,
+  description,
+}));
+
+const COMMAND_WORKFLOWS = [
+  {
+    title: "Filtre komutu etkileşim akışı",
+    steps: [
+      {
+        title: "Komutu çalıştır",
+        description:
+          "!filtre komutunu gönderin veya slash komutundan seçin; etkileşimli kontrol paneli anında açılır.",
+      },
+      {
+        title: "Kelime ve muafiyetleri düzenle",
+        description:
+          "Eklemek için formu doldurun, kaldırmak için listedeki kelimeleri seçin, kanal ve rol muafiyetlerini seçicilerden işaretleyin.",
+      },
+      {
+        title: "Sonuçları doğrula",
+        description:
+          "Bot her işlem sonrası özet mesaj gönderir ve yeni yapılandırmayı tüm sunucuya uygular.",
+      },
+    ],
+  },
+  {
+    title: "Premium yönetim süreci",
+    steps: [
+      {
+        title: "Durumu kontrol et",
+        description:
+          "!premium komutu aktif lisans, kalan gün ve kotayı gösterir.",
+      },
+      {
+        title: "Anahtar oluştur",
+        description:
+          "Sahipler !premiumolustur komutu ile örneğin 30 gün geçerli anahtar üretir.",
+      },
+      {
+        title: "Anahtarı kullan",
+        description:
+          "Yetkili yöneticiler !premium komutundaki buton ile veya panelden anahtarı girerek yükseltmeyi tamamlar.",
+      },
+    ],
   },
 ];
 
@@ -192,6 +384,19 @@ function ensureDashboardConfigured() {
   return Boolean(ClientId && ClientSecret && CallbackURL && SessionSecret);
 }
 
+function getInviteUrl() {
+  const clientId = config.Dashboard?.ClientId ?? config.Bot?.ClientId;
+
+  if (!clientId || clientId === "DISCORD_BOT_TOKEN") {
+    return null;
+  }
+
+  const scopes = encodeURIComponent("bot applications.commands");
+  const permissions = "268510208";
+
+  return `https://discord.com/oauth2/authorize?client_id=${clientId}&scope=${scopes}&permissions=${permissions}`;
+}
+
 function configurePassport() {
   const dashboardConfig = config.Dashboard;
 
@@ -213,11 +418,14 @@ function configurePassport() {
 
 function renderHome(req, res) {
   res.render("home", {
-    commands: COMMAND_CATALOG,
+    featureSpotlights: FEATURE_SPOTLIGHTS,
+    commandHighlights: COMMAND_CATALOG.slice(0, 3),
+    schematics: FEATURE_SCHEMATICS.slice(0, 1),
     premiumFeatures: PREMIUM_FEATURES,
     premiumEnabled: premiumStore.isEnabled(),
     defaultLimitLabel: formatWordLimitLabel(premiumStore.getDefaultLimit()),
     premiumLimitLabel: formatWordLimitLabel(premiumStore.getPremiumLimit()),
+    inviteUrl: getInviteUrl(),
     isHome: true,
   });
 }
@@ -230,6 +438,7 @@ function renderDashboard(req, res, client) {
     premiumEnabled: premiumStore.isEnabled(),
     defaultLimitLabel: formatWordLimitLabel(premiumStore.getDefaultLimit()),
     premiumLimitLabel: formatWordLimitLabel(premiumStore.getPremiumLimit()),
+    inviteUrl: getInviteUrl(),
   });
 }
 
@@ -247,6 +456,8 @@ function renderGuildDashboard(req, res, client, guildId) {
   }
 
   const words = filterStore.getWords(guildId);
+  const exemptChannels = filterStore.getExemptChannels(guildId);
+  const exemptRoles = filterStore.getExemptRoles(guildId);
   const flashMessage = req.session.dashboardMessage;
   const flashType = req.session.dashboardMessageType;
   delete req.session.dashboardMessage;
@@ -290,9 +501,86 @@ function renderGuildDashboard(req, res, client, guildId) {
   const remainingSlots =
     wordLimit === Infinity ? null : Math.max(wordLimit - words.length, 0);
 
+  const liveGuild = client.guilds.cache.get(guildId);
+  const channelOptions = [];
+  const roleOptions = [];
+
+  if (liveGuild) {
+    liveGuild.channels.cache
+      .filter((channel) =>
+        [
+          ChannelType.GuildText,
+          ChannelType.GuildAnnouncement,
+          ChannelType.GuildVoice,
+          ChannelType.GuildStageVoice,
+          ChannelType.GuildForum,
+        ].includes(channel.type),
+      )
+      .forEach((channel) => {
+        channelOptions.push({
+          id: channel.id,
+          name: channel.name,
+          type: channel.type,
+          mentionPrefix:
+            channel.type === ChannelType.GuildText ||
+            channel.type === ChannelType.GuildAnnouncement
+              ? "#"
+              : "",
+          exempt: exemptChannels.includes(channel.id),
+        });
+      });
+
+    liveGuild.roles.cache
+      .filter((role) => !role.managed && role.id !== liveGuild.id)
+      .forEach((role) => {
+        roleOptions.push({
+          id: role.id,
+          name: role.name,
+          color: role.hexColor,
+          exempt: exemptRoles.includes(role.id),
+        });
+      });
+  }
+
+  channelOptions.sort((a, b) => a.name.localeCompare(b.name, "tr"));
+  roleOptions.sort((a, b) => a.name.localeCompare(b.name, "tr"));
+
+  const channelLookup = new Map(channelOptions.map((channel) => [channel.id, channel]));
+  const roleLookup = new Map(roleOptions.map((role) => [role.id, role]));
+
+  const selectedChannels = exemptChannels.map((id) => {
+    const meta = channelLookup.get(id);
+    return (
+      meta ?? {
+        id,
+        name: "Bilinmeyen Kanal",
+        mentionPrefix: "#",
+        exempt: true,
+        missing: true,
+      }
+    );
+  });
+
+  const selectedRoles = exemptRoles.map((id) => {
+    const meta = roleLookup.get(id);
+    return (
+      meta ?? {
+        id,
+        name: "Silinmiş Rol",
+        color: "#5865F2",
+        exempt: true,
+        missing: true,
+      }
+    );
+  });
+
   res.render("guild", {
     guild,
     words,
+    channelOptions,
+    roleOptions,
+    selectedChannels,
+    selectedRoles,
     flashMessage,
     flashType,
     premiumEnabled: premiumStore.isEnabled(),
@@ -309,6 +597,25 @@ function renderGuildDashboard(req, res, client, guildId) {
     premiumExpiresLabel: expiresLabel,
     premiumRemainingLabel: remainingLabel,
     premiumDurationLabel: durationLabel,
+    inviteUrl: getInviteUrl(),
+  });
+}
+
+function renderFeatures(req, res) {
+  res.render("features", {
+    featureSpotlights: FEATURE_SPOTLIGHTS,
+    schematics: FEATURE_SCHEMATICS,
+    inviteUrl: getInviteUrl(),
+  });
+}
+
+function renderCommands(req, res) {
+  res.render("commands", {
+    commands: COMMAND_DETAILS,
+    workflows: COMMAND_WORKFLOWS,
+    defaultLimitLabel: formatWordLimitLabel(premiumStore.getDefaultLimit()),
+    premiumLimitLabel: formatWordLimitLabel(premiumStore.getPremiumLimit()),
+    inviteUrl: getInviteUrl(),
   });
 }
 
@@ -349,10 +656,33 @@ function startDashboard(client) {
     res.locals.isAuthenticated = req.isAuthenticated?.() ?? false;
     res.locals.currentYear = new Date().getFullYear();
     res.locals.isHome = false;
+    res.locals.currentPath = req.path;
+    res.locals.inviteUrl = getInviteUrl();
+    if (req.user) {
+      const discriminator =
+        typeof req.user.discriminator === "string" &&
+        req.user.discriminator !== "0"
+          ? `#${req.user.discriminator}`
+          : "";
+      const avatarUrl = req.user.avatar
+        ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png?size=128`
+        : `https://cdn.discordapp.com/embed/avatars/${
+            Number(req.user.discriminator ?? 0) % 5
+          }.png`;
+
+      res.locals.profile = {
+        tag: `${req.user.username ?? "Kullanıcı"}${discriminator}`,
+        avatarUrl,
+      };
+    } else {
+      res.locals.profile = null;
+    }
     next();
   });
 
   app.get("/", (req, res) => renderHome(req, res));
+  app.get("/ozellikler", (req, res) => renderFeatures(req, res));
+  app.get("/komutlar", (req, res) => renderCommands(req, res));
   app.get("/dashboard", ensureAuthenticated, (req, res) =>
     renderDashboard(req, res, client),
   );
@@ -398,6 +728,70 @@ function startDashboard(client) {
 
     res.redirect(`/dashboard/${req.params.guildId}`);
   });
+
+  app.post(
+    "/dashboard/:guildId/exemptions/channels",
+    ensureAuthenticated,
+    (req, res) => {
+      const guilds = getAdminGuilds(req.user, client);
+      const guild = guilds.find((g) => g.id === req.params.guildId);
+
+      if (!guild) {
+        req.session.dashboardMessage = "Bu sunucuyu yönetme yetkiniz yok.";
+        req.session.dashboardMessageType = "error";
+        res.redirect(`/dashboard/${req.params.guildId}`);
+        return;
+      }
+
+      const selections = req.body.channels;
+      const channelIds = Array.isArray(selections)
+        ? selections
+        : selections
+        ? [selections]
+        : [];
+
+      const result = filterStore.setExemptChannels(guild.id, channelIds);
+
+      req.session.dashboardMessage = result.channels.length
+        ? `${result.channels.length} kanal filtre kontrolünden muaf tutuluyor.`
+        : "Muaf kanal bulunmuyor. Tüm kanallarda filtre aktif.";
+      req.session.dashboardMessageType = "success";
+
+      res.redirect(`/dashboard/${req.params.guildId}`);
+    },
+  );
+
+  app.post(
+    "/dashboard/:guildId/exemptions/roles",
+    ensureAuthenticated,
+    (req, res) => {
+      const guilds = getAdminGuilds(req.user, client);
+      const guild = guilds.find((g) => g.id === req.params.guildId);
+
+      if (!guild) {
+        req.session.dashboardMessage = "Bu sunucuyu yönetme yetkiniz yok.";
+        req.session.dashboardMessageType = "error";
+        res.redirect(`/dashboard/${req.params.guildId}`);
+        return;
+      }
+
+      const selections = req.body.roles;
+      const roleIds = Array.isArray(selections)
+        ? selections
+        : selections
+        ? [selections]
+        : [];
+
+      const result = filterStore.setExemptRoles(guild.id, roleIds);
+
+      req.session.dashboardMessage = result.roles.length
+        ? `${result.roles.length} rol filtre kontrolünden muaf tutuluyor.`
+        : "Muaf rol bulunmuyor. Tüm roller filtreye tabi.";
+      req.session.dashboardMessageType = "success";
+
+      res.redirect(`/dashboard/${req.params.guildId}`);
+    },
+  );
 
   app.post("/dashboard/:guildId/premium", ensureAuthenticated, (req, res) => {
     const guilds = getAdminGuilds(req.user, client);

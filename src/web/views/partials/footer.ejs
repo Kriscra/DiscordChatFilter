@@ -1,16 +1,29 @@
 <footer>
   <div class="container footer-content">
-    <div>
+    <div class="footer-brand">
       <strong>Chat Filter</strong>
-      <span> &middot; &copy; <%= currentYear %></span>
+      <p>
+        Profesyonel moderasyon otomasyonu &middot; &copy; <%= currentYear %>
+      </p>
     </div>
-    <div class="footer-links">
-      <a href="<%= isHome ? '#features' : '/#features' %>">Özellikler</a>
-      <a href="<%= isHome ? '#dashboard' : '/#dashboard' %>">Dashboard</a>
-      <a href="<%= isHome ? '#commands' : '/#commands' %>">Komutlar</a>
-      <% if (isAuthenticated) { %>
-        <a href="/dashboard">Sunucular</a>
-      <% } %>
+    <div class="footer-columns">
+      <div>
+        <span>Ürün</span>
+        <a href="/ozellikler">Özellikler</a>
+        <a href="/komutlar">Komutlar</a>
+        <a href="<%= isHome ? '#premium' : '/#premium' %>">Premium</a>
+      </div>
+      <div>
+        <span>Panel</span>
+        <% if (isAuthenticated) { %>
+          <a href="/dashboard">Sunucularım</a>
+        <% } else { %>
+          <a href="/auth/discord">Giriş Yap</a>
+        <% } %>
+        <% if (inviteUrl) { %>
+          <a href="<%= inviteUrl %>" target="_blank" rel="noopener">Botu Davet Et</a>
+        <% } %>
+      </div>
     </div>
   </div>
 </footer>

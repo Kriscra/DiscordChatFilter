@@ -12,27 +12,35 @@
       <div class="container">
         <section class="section">
           <div class="page-header">
-            <h1 class="page-title">Sunucularım</h1>
-            <p class="page-subtitle">
-              Yönetici olduğunuz ve botun bulunduğu sunucular için filtre
-              ayarlarını buradan kontrol edin. Her sunucu kendi kelime
-              listesine sahiptir ve değişiklikler anında uygulanır.
-            </p>
-            <% if (premiumEnabled) { %>
-              <div class="info-banner">
-                <div>
-                  <strong>Premium avantajları</strong>
-                  <p>
-                    Standart plan <%= defaultLimitLabel %> ile sınırlıdır.
-                    Premium üyelikte kotanızı <%= premiumLimitLabel %>
-                    seviyesine yükseltebilir ve gelişmiş raporları
-                    kullanabilirsiniz.
-                  </p>
-                </div>
-                <a class="button secondary" href="/#premium">Detayları Gör</a>
-              </div>
-            <% } %>
+            <div>
+              <h1 class="page-title">Sunucularım</h1>
+              <p class="page-subtitle">
+                Yönetici olduğunuz ve botun bulunduğu sunucular için filtre
+                ayarlarını tek bir panelden yönetin. Muafiyetler ve kelime
+                listeleri anında eşitlenir.
+              </p>
+            </div>
+            <div class="header-actions">
+              <% if (inviteUrl) { %>
+                <a class="button ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">
+                  Botu Sunucuma Ekle
+                </a>
+              <% } %>
+            </div>
           </div>
+          <% if (premiumEnabled) { %>
+            <div class="info-banner subtle">
+              <div>
+                <strong>Premium avantajları</strong>
+                <p>
+                  Standart plan <%= defaultLimitLabel %>, premium plan ise
+                  <%= premiumLimitLabel %> kelime kotası sunar. Lisansınızı
+                  dashboard'dan veya !premium komutu ile etkinleştirebilirsiniz.
+                </p>
+              </div>
+              <a class="inline-link" href="/#premium">Detayları Gör</a>
+            </div>
+          <% } %>
           <div class="surface-card manager-card">
             <% if (!guilds.length) { %>
               <div class="empty">
