@@ -1,0 +1,272 @@
+:root {
+  color-scheme: light dark;
+  --brand: #3b82f6;
+  --brand-dark: #1d4ed8;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --success-bg: #dcfce7;
+  --success-text: #166534;
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+main {
+  min-height: calc(100vh - 180px);
+}
+
+header {
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: white;
+  padding: 1.75rem 0;
+  box-shadow: 0 20px 50px -30px rgba(29, 78, 216, 0.75);
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand svg {
+  width: 28px;
+  height: 28px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.nav-links a:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.nav-user {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--brand);
+  color: white;
+  text-decoration: none;
+  border-radius: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  background: var(--brand-dark);
+  transform: translateY(-1px);
+}
+
+.button.danger {
+  background: #ef4444;
+}
+
+.button.danger:hover {
+  background: #dc2626;
+}
+
+.hero {
+  background: var(--surface);
+  padding: 3rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 30px 70px -40px rgba(17, 24, 39, 0.45);
+  text-align: center;
+}
+
+.hero h1 {
+  margin-top: 0;
+  font-size: 2.5rem;
+}
+
+.hero p {
+  color: var(--muted);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.guild-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.guild-card {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 20px 50px -40px rgba(30, 64, 175, 0.5);
+}
+
+.guild-card strong {
+  font-size: 1.1rem;
+}
+
+.words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.chip {
+  padding: 0.4rem 0.85rem;
+  background: #e0f2fe;
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.empty {
+  padding: 1.25rem;
+  border: 1px dashed var(--border);
+  background: #f8fafc;
+  border-radius: 1rem;
+  color: var(--muted);
+}
+
+form {
+  margin-top: 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+form .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+input[type="text"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+.message {
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.message.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.message.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem 0;
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .guild-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  form .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button {
+    width: 100%;
+  }
+}

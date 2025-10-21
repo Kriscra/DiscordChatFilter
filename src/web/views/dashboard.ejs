@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sunucularım | Chat Filter Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container">
+        <section class="grid">
+          <div class="hero">
+            <h1>Sunucularım</h1>
+            <p>Filtrelerini yönetmek istediğiniz sunucuyu seçin.</p>
+            <% if (!guilds.length) { %>
+              <div class="empty">
+                Yönetici yetkisine sahip olduğunuz ve botun bulunduğu herhangi bir
+                sunucu bulunamadı.
+              </div>
+            <% } else { %>
+              <ul class="guild-list">
+                <% guilds.forEach(function (guild) { %>
+                  <li class="guild-card">
+                    <strong><%= guild.name %></strong>
+                    <a class="button" href="/dashboard/<%= guild.id %>">Yönet</a>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
+          </div>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>

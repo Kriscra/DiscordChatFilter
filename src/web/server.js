@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
@@ -62,89 +63,18 @@ function configurePassport() {
   passport.deserializeUser((obj, done) => done(null, obj));
 }
 
-function formatLayout(content, user) {
-  const authSection = user
-    ? `<div class="user">Giriş yapan: ${user.username}#${user.discriminator} | <a href="/logout">Çıkış Yap</a></div>`
-    : "";
-
-  return `<!DOCTYPE html>
-<html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat Filter Dashboard</title>
-    <style>
-      body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0; background: #f4f6fb; color: #1f2937; }
-      header { background: #3b82f6; color: white; padding: 1.5rem 2rem; }
-      main { max-width: 960px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.25); }
-      h1 { margin-top: 0; }
-      a.button { display: inline-block; padding: 0.75rem 1.5rem; background: #2563eb; color: white; border-radius: 0.75rem; text-decoration: none; font-weight: 600; }
-      a.button:hover { background: #1d4ed8; }
-      ul { list-style: none; padding: 0; }
-      li.guild { padding: 0.75rem 1rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
-      li.guild span { font-weight: 600; }
-      form { margin-top: 1.5rem; display: grid; gap: 1rem; }
-      form .row { display: flex; gap: 0.75rem; }
-      form input[type="text"] { flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.75rem; }
-      form button { padding: 0.75rem 1.5rem; border: none; border-radius: 0.75rem; background: #10b981; color: white; font-weight: 600; cursor: pointer; }
-      form button.danger { background: #ef4444; }
-      .words { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-      .chip { padding: 0.35rem 0.75rem; background: #e0f2fe; color: #1d4ed8; border-radius: 999px; font-size: 0.875rem; }
-      .empty { padding: 1rem; background: #f1f5f9; border-radius: 0.75rem; }
-      .message { padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; }
-      .message.success { background: #dcfce7; color: #166534; }
-      .message.error { background: #fee2e2; color: #991b1b; }
-      .user { margin-bottom: 1rem; font-weight: 600; }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Chat Filter Dashboard</h1>
-    </header>
-    <main>
-      ${authSection}
-      ${content}
-    </main>
-  </body>
-</html>`;
-}
-
 function renderHome(req, res) {
-  if (req.isAuthenticated?.()) {
-    const content = `<p>Sunucu filtrelerini yönetmek için aşağıdaki butona tıklayın.</p>
-<a class="button" href="/dashboard">Sunucularım</a>`;
-
-    res.send(formatLayout(content, req.user));
-    return;
-  }
-
-  const content = `<p>Discord hesabınız ile giriş yaparak filtreleri yönetebilirsiniz.</p>
-<a class="button" href="/auth/discord">Discord ile Giriş Yap</a>`;
-
-  res.send(formatLayout(content));
+  res.render("home", {
+    isAuthenticated: req.isAuthenticated?.() ?? false,
+  });
 }
 
 function renderDashboard(req, res, client) {
   const guilds = getAdminGuilds(req.user, client);
 
-  if (!guilds.length) {
-    const content = `<p>Yönetici olduğunuz ve botun bulunduğu herhangi bir sunucu bulunamadı.</p>
-<p>Lütfen botu davet ettiğinizden ve yönetici yetkisine sahip olduğunuzdan emin olun.</p>`;
-    res.send(formatLayout(content, req.user));
-    return;
-  }
-
-  const items = guilds
-    .map(
-      (guild) =>
-        `<li class="guild"><span>${guild.name}</span> <a class="button" href="/dashboard/${guild.id}">Yönet</a></li>`,
-    )
-    .join("");
-
-  const content = `<p>Filtreleri yönetmek istediğiniz sunucuyu seçin.</p>
-<ul>${items}</ul>`;
-
-  res.send(formatLayout(content, req.user));
+  res.render("dashboard", {
+    guilds,
+  });
 }
 
 function renderGuildDashboard(req, res, client, guildId) {
@@ -152,46 +82,26 @@ function renderGuildDashboard(req, res, client, guildId) {
   const guild = guilds.find((g) => g.id === guildId);
 
   if (!guild) {
-    res.status(403).send(
-      formatLayout(
-        `<div class="message error">Bu sunucuyu yönetme yetkiniz yok.</div>
-<a class="button" href="/dashboard">Sunuculara Dön</a>`,
-        req.user,
-      ),
-    );
+    res.status(403).render("error", {
+      title: "Yetkisiz İşlem",
+      message: "Bu sunucuyu yönetme yetkiniz yok.",
+      backLink: "/dashboard",
+    });
     return;
   }
 
   const words = filterStore.getWords(guildId);
-  const message = req.session.dashboardMessage;
-  const messageType = req.session.dashboardMessageType;
+  const flashMessage = req.session.dashboardMessage;
+  const flashType = req.session.dashboardMessageType;
   delete req.session.dashboardMessage;
   delete req.session.dashboardMessageType;
 
-  const messageHtml = message
-    ? `<div class="message ${messageType}">${message}</div>`
-    : "";
-
-  const wordsHtml = words.length
-    ? `<div class="words">${words
-        .map((word) => `<span class="chip">${word}</span>`)
-        .join("")}</div>`
-    : '<div class="empty">Bu sunucu için kayıtlı kelime bulunmuyor.</div>';
-
-  const content = `${messageHtml}
-<h2>${guild.name} Filtre Yönetimi</h2>
-<p>Yeni kelimeler ekleyebilir veya mevcut kelimeleri çıkartabilirsiniz.</p>
-${wordsHtml}
-<form method="POST" action="/dashboard/${guildId}/words">
-  <div class="row">
-    <input type="text" name="word" placeholder="Kelime" maxlength="100" required />
-    <button type="submit" name="action" value="add">Kelime Ekle</button>
-    <button type="submit" name="action" value="remove" class="danger">Kelime Çıkart</button>
-  </div>
-</form>
-<p><a class="button" href="/dashboard">Sunuculara Dön</a></p>`;
-
-  res.send(formatLayout(content, req.user));
+  res.render("guild", {
+    guild,
+    words,
+    flashMessage,
+    flashType,
+  });
 }
 
 function startDashboard(client) {
@@ -212,6 +122,10 @@ function startDashboard(client) {
   const { SessionSecret, Port } = config.Dashboard;
 
   app.set("trust proxy", 1);
+  app.set("views", path.join(__dirname, "views"));
+  app.set("view engine", "ejs");
+
+  app.use("/static", express.static(path.join(__dirname, "public")));
   app.use(
     session({
       secret: SessionSecret,
@@ -222,6 +136,12 @@ function startDashboard(client) {
   app.use(express.urlencoded({ extended: false }));
   app.use(passport.initialize());
   app.use(passport.session());
+  app.use((req, res, next) => {
+    res.locals.user = req.user;
+    res.locals.isAuthenticated = req.isAuthenticated?.() ?? false;
+    res.locals.currentYear = new Date().getFullYear();
+    next();
+  });
 
   app.get("/", (req, res) => renderHome(req, res));
   app.get("/dashboard", ensureAuthenticated, (req, res) =>
@@ -310,14 +230,11 @@ function startDashboard(client) {
 
   app.use((err, req, res, next) => {
     console.error("[Dashboard] Bir hata oluştu:", err);
-    res
-      .status(500)
-      .send(
-        formatLayout(
-          `<div class="message error">Beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.</div>`,
-          req.user,
-        ),
-      );
+    res.status(500).render("error", {
+      title: "Beklenmedik Hata",
+      message: "Beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+      backLink: req.isAuthenticated?.() ? "/dashboard" : "/",
+    });
   });
 
   const server = app.listen(Port ?? 3000, () => {

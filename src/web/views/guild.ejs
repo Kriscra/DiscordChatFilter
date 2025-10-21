@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= guild.name %> | Chat Filter Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <div class="container">
+        <section class="grid">
+          <div class="hero">
+            <h1><%= guild.name %> Filtre Yönetimi</h1>
+            <p>Yeni kelimeler ekleyebilir veya mevcut kelimeleri kaldırabilirsiniz.</p>
+            <% if (flashMessage) { %>
+              <div class="message <%= flashType %>"><%= flashMessage %></div>
+            <% } %>
+            <% if (words.length) { %>
+              <div class="words">
+                <% words.forEach(function (word) { %>
+                  <span class="chip"><%= word %></span>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="empty">Bu sunucu için kayıtlı kelime bulunmuyor.</div>
+            <% } %>
+            <form method="POST" action="/dashboard/<%= guild.id %>/words">
+              <div class="row">
+                <input
+                  type="text"
+                  name="word"
+                  placeholder="Kelime"
+                  maxlength="100"
+                  required
+                />
+                <button class="button" type="submit" name="action" value="add">
+                  Kelime Ekle
+                </button>
+                <button
+                  class="button danger"
+                  type="submit"
+                  name="action"
+                  value="remove"
+                >
+                  Kelime Çıkart
+                </button>
+              </div>
+            </form>
+            <p>
+              <a class="button" href="/dashboard">Sunuculara Dön</a>
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
+  </body>
+</html>
